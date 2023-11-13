@@ -21,17 +21,36 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         {name : The name of the repository}
         {--other : If not put, it will create an eloquent repository}?
         {--service : Create a service along with the repository}?
-        {--path : Where the repository should be created}?';
+        {--path : Where the repository should be created}?
+        {--model : The model class for the repository}';
 
     public $description = 'Create a new repository class';
 
+    /**
+     * The type of class being generated.
+     *
+     * @var string
+     */
+    protected $type = 'Repository';
     protected $defaultClass = 'DefaultRepository';
-    protected $defaultNamespace = 'App\\Repositories';
-    protected $defaultPath = 'App/Repositories';
-    protected $classSuffix = 'Repository'; //config('simple-module.repository_suffix', 'Repository');
-    protected $interfaceSuffix = 'RepositoryInterface'; //config('simple-module.repository_interface_suffix', 'RepositoryInterface');
+    protected $defaultNamespace;
+    protected $defaultPath;
+    protected $classSuffix;
+    protected $interfaceSuffix;
+    protected $serviceSuffix;
     protected $interfaceStubPath = __DIR__ . '/stubs/repository-interface.stub';
-    protected $serviceSuffix = 'Service'; //config('simple-module.service_suffix', 'Service');
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->defaultNamespace = config('simple-module.repository_namespace') ?? 'App\\Repositories';
+        $this->defaultPath = config('simple-module.repository_directory') ?? 'App/Repositories';
+        $this->classSuffix = config('simple-module.repository_suffix') ?? 'Repository';
+        $this->interfaceSuffix = config('simple-module.repository_interface_suffix') ?? 'RepositoryInterface';
+        $this->serviceSuffix = config('simple-module.service_suffix') ?? 'Service';
+    }
+
 
     /**
      * Handle the command
@@ -114,14 +133,17 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         $class = $this->getClassName($classBaseName);
         $class = $class . $this->classSuffix;
         $interface = $classBaseName . $this->interfaceSuffix;
-        $namespacedModel = $this->getModelNamespace();
+
+        $model = $this->parseModelNamespaceAndClass($this->option("model"));    
+        $namespacedModel = $model['namespace'];
+        $modelVariable = $model['class'];
 
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class,
             "{{ interface }}" => $interface,
             "{{ namespacedModel }}"   => $namespacedModel,
-            "{{ modelVariable }}"   => $classBaseName
+            "{{ modelVariable }}"   => $modelVariable
         ];
 
         $stubName = $isDefault ? "eloquent-repository.stub" : "custom-repository.stub";

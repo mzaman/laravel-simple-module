@@ -2,12 +2,32 @@
 
 return [
     /**
+     * The default directory for all the modules
+     */
+    "module_directory" => "app/Modules",
+
+    /**
+     * The default namespace for all the modules
+     */
+    "module_namespace" => "App\Modules",
+
+    /**
+     * The default directory for all the models
+     */
+    "model_directory" => "app/Models",
+
+    /**
+     * The default namespace for all the models
+     */
+    "model_namespace" => "App\Models",
+
+    /**
      * The directory for all the repositories
      */
     "repository_directory" => "app/Repositories",
 
     /**
-     * Default repository namespace
+     * The default namespace for all the repositories
      */
     "repository_namespace" => "App\Repositories",
 
@@ -17,7 +37,7 @@ return [
     "service_directory" => "app/Services",
 
     /**
-     * Default service namespace
+     * The default namespace for all the services
      */
     "service_namespace" => "App\Services",
 ];

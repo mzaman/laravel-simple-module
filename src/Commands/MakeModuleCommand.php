@@ -8,14 +8,19 @@ namespace LaravelSimpleModule\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use LaravelSimpleModule\AssistCommand;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use LaravelSimpleModule\Commands\SharedMethods;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 
 class MakeModuleCommand extends Command implements PromptsForMissingInput
 {
+
+    use AssistCommand, 
+        SharedMethods;
     /**
      * The name and signature of the console command.
      *
@@ -33,20 +38,21 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     protected $description = 'Generate Laravel module scaffolding structure';
 
     /**
-     * Filesystem instance
-     * @var Filesystem
+     * The type of class being generated.
+     *
+     * @var string
      */
-    protected $files;
+    protected $type = 'Module';
+    protected $defaultClass = 'DefaultModule';
+    protected $defaultNamespace;
+    protected $defaultPath;
 
-    /**
-     * Create a new command instance.
-     * @param Filesystem $files
-     */
-    public function __construct(Filesystem $files)
+    public function __construct()
     {
         parent::__construct();
 
-        $this->files = $files;
+        $this->defaultNamespace = config('simple-module.module_namespace') ?? 'App\\Modules';
+        $this->defaultPath = config('simple-module.module_directory') ?? 'App/Modules';
     }
 
     /**
@@ -60,22 +66,10 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         // Ask for module name
         $module = $this->getSingularClassName($this->argument('name'));
         $this->module = $module;
-        if ($this->confirm('Do you wish to continue?', true)) {
-            $progress += 1;
-            $this->info("Generating the $module module scaffolding structure..."); 
-            $this->newLine(3);
-        } else {
-            $this->error('The scaffolding process is canceled!');
-            return false;
-        }
 
-
+        $classBaseName = $this->getClassBaseName();
         // Create the directory structure and generate relevant files
-        $modulePath = $this->getModulePath();
-        $this->modulePath = $modulePath;
-
-        $moduleNamespace = str_replace('/', '\\', $this->getSingularClassName($modulePath));
-        $this->moduleNamespace = $moduleNamespace;
+        $this->checkIfRequiredDirectoriesExist();
 
 
         // Choose the features to generate (Api, Backend, Frontend)
@@ -83,7 +77,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         $this->features = $this->handleChoices('Select scaffolding parts to generate', $featureChoices);
 
         // Choose the parts to include (Events, Controllers, Middleware, Requests, Listeners, Models)
-        $partChoices = ['Events', 'Controllers', 'Middleware', 'Requests', 'Listeners', 'Models', 'Repositories', 'Services'];
+        $partChoices = ['Events', 'Controllers', 'Middleware', 'Requests', 'Listeners', 'Models', 'Repositories', 'Services', 'Policies', 'Factories', 'Seeder'];
         $this->parts = $this->handleChoices('Select parts to include', $partChoices);
 
         $models = [];
@@ -102,8 +96,17 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         // Select models to create migrations for
         $migrationModels = $this->handleChoices('Select models to create migrations for', $models);
 
+        // Select models to create seeders for
+        $seederModels = $this->handleChoices('Select models to create seeders for', $models);
+
+        // Select models to create factories for
+        $factoryModels = $this->handleChoices('Select models to create factories for', $models);
+
         // Select models to create controllers for
         $controllerModels = $this->handleChoices('Select models to create controllers for', $models);
+
+        // Select models to create policies for
+        $policyModels = $this->handleChoices('Select models to create policies for', $models);
 
         // Select models to create repository for
         $repositoryModels = $this->handleChoices('Select models to create repository for', $models); 
@@ -111,48 +114,41 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         // Select models to create service for
         $serviceModels = $this->handleChoices('Select models to create service for', $models); 
 
-        $progress = $progress + count($models) + (count($partChoices) * count($featureChoices)) + (count($controllerModels) * count($featureChoices)) + count($repositoryModels) + count($serviceModels) + count($migrationModels);
+        $progress = $progress + count($models) + (count($partChoices) * count($featureChoices)) + (count($controllerModels) * count($featureChoices)) + count($repositoryModels) + count($serviceModels) + count($migrationModels) + count($seederModels) + count($factoryModels) + count($policyModels);
+
+        if ($this->confirm('Do you wish to continue...?', true)) {
+            $progress += 1;
+            $this->info("Generating the $module module scaffolding structure..."); 
+            $this->newLine(2);
+        } else {
+            $this->error('The scaffolding process is canceled!');
+            return false;
+        }
 
         $this->bar = $this->output->createProgressBar($progress);
 
         $this->bar->start();
 
-        $this->newLine();
         $this->makeModels();
-        $this->newLine();
+        $this->makeSeeders($seederModels);
+        $this->makeFactories($factoryModels);
+        $this->makePolicies($policyModels);
         $this->makeControllers($controllerModels);
-        $this->newLine();
         $this->makeRepositories($serviceModels);
-        $this->newLine();
         $this->makeServices($serviceModels);
-        $this->newLine();
         $this->makeEvents();
-        $this->newLine();
         $this->makeRequests();
-        $this->newLine();
         $this->makeListeners();
-        $this->newLine();
         $this->makeMigrations($migrationModels);
-        $this->newLine();
 
         $this->bar->finish();
 
+        $this->newLine();
         $this->info('Scaffolding generated successfully!');
 
         return Command::SUCCESS;
     }
 
-    /**
-     * Prompt for missing input arguments using the returned questions.
-     *
-     * @return array
-     */
-    protected function promptForMissingArgumentsUsing()
-    {
-        return [
-            'name' => 'What should the module be named (e.g., DefaultModule) ?',
-        ];
-    }
 
     /**
      * Simplified method for handling choices and default values.
@@ -177,110 +173,20 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         }
     }
 
-    /**
-    **
-    * Map the stub variables present in stub to its value
-    *
-    * @return array
-    *
-    */
-    public function getChoices()
-    {
-        $name = $this->argument('name');
-        $path = $this->option('path');
-
-        switch (true) {
-            // Case 1: name argument contains namespace, path not provided
-            case preg_match('/(.*)\\\\([a-zA-Z]+)$/', $name, $matches) && empty($path):
-                $namespace = $matches[1];
-                $className = $matches[2];
-                $fullPath = str_replace('\\', '/', $namespace);
-                break;
-
-            // Case 2: name argument contains class name, path not provided
-            case !preg_match('/\\\\/', $name) && empty($path):
-                $namespace = 'App\\Modules';
-                $className = $name;
-                $fullPath = 'App/Modules';
-                break;
-
-            // Case 3: name argument contains namespace, path provided
-            case preg_match('/(.*)\\\\([a-zA-Z]+)$/', $name, $matches) && !empty($path):
-                $namespace = $matches[1];
-                $className = $matches[2];
-                $fullPath = $path;
-                break;
-
-            // Case 4: name argument contains class name, path provided
-            case !preg_match('/\\\\/', $name) && !empty($path):
-                $namespace = $path;
-                $className = $name;
-                $fullPath = $path;
-                break;
-
-            default:
-                // Handle any other cases or provide default values if needed
-                $namespace = 'App\\Modules';
-                $className = 'DefaultModule';
-                $fullPath = 'App/Modules';
-                break;
-        }
-
-        return [
-            'namespace' => $this->getSingularClassName($namespace),
-            'class' => $this->getSingularClassName($className),
-            'path' => $fullPath,
-        ];
-    }
 
     /**
      * Get the full path of the generated class file.
      *
      * @return string
      */
-    public function getModulePath()
+    public function getPath()
     {
         $choices = $this->getChoices();
          
         return $choices['path'] . DIRECTORY_SEPARATOR . $choices['class'];
     }
 
-    /**
-     * Return the Singular Capitalize Name
-     * @param $name
-     * @return string
-     */
-    public function getSingularClassName($name)
-    {
-        return ucwords(Pluralizer::singular($name));
-    }
 
-    /**
-     * Remove items from an array by their values if they exist in another array.
-     *
-     * @param array $array The input array.
-     * @param array $values The array of values to be removed from the input array.
-     * @return array The modified array with the specified values removed.
-     */
-    private function removeByValues($array, $values) {
-        if (!is_array($array) || !is_array($values)) {
-            return $array; // Return the original value if it's not an array.
-        }
-
-        return array_values(array_diff($array, $values));
-    }
-
-
-    /**
-     * Convert a string to PascalCase.
-     *
-     * @param string $str
-     * @return string
-     */
-    private function toPascal($str)
-    {
-       return Str::studly(Str::lower($str));
-    }
 
     /**
      * Generate migrations for selected models.
@@ -290,13 +196,77 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
      */
     private function makeMigrations($models)
     {
-        if (count($models)) {   
-            $this->newLine();
+        if (count($models)) {
             foreach ($models as $model) {
                 $table = Str::snake(Str::pluralStudly(class_basename($model)));
-                $this->call('make:migration', [
+                Artisan::call('make:migration', [
                     'name' => "create_{$table}_table",
                     '--create' => $table,
+                    '--fullpath' => true,
+                ]);
+                $this->bar->advance();
+            }
+        }
+    }
+
+
+    /**
+     * Generate seeder files for selected models.
+     *
+     * @param array $models
+     * @return void
+     */
+    private function makeSeeders($models)
+    {
+        if (count($models)) {
+            foreach ($models as $model) {
+                $seeder = Str::studly(class_basename(class_basename($model)));
+                
+                Artisan::call('make:seeder', [
+                    'name' => "{$seeder}Seeder",
+                ]);
+                $this->bar->advance();
+            }
+        }
+    }
+
+
+    /**
+     * Generate model factories for selected models.
+     *
+     * @param array $models
+     * @return void
+     */
+    private function makeFactories($models)
+    {
+        if (count($models)) {
+            foreach ($models as $model) {
+                $factory = Str::studly(class_basename(class_basename($model)));
+                
+                Artisan::call('make:factory', [
+                    'name' => "{$factory}Factory",
+                    '--model' => $this->getModelNamespace() .  "\\$model",
+                ]);
+                $this->bar->advance();
+            }
+        }
+    }
+
+    /**
+     * Generate model policies for selected models.
+     *
+     * @param array $models
+     * @return void
+     */
+    private function makePolicies($models)
+    {
+        if (count($models)) {
+            foreach ($models as $model) {
+                $policy = Str::studly(class_basename(class_basename($model)));
+                
+                Artisan::call('make:policy', [
+                    'name' => $this->getNamespace() .  "\\Policies\\{$policy}Policy",
+                    '--model' => $this->getModelNamespace() .  "\\$model",
                 ]);
                 $this->bar->advance();
             }
@@ -314,13 +284,17 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     {
         if (in_array('Controllers', $this->parts) && count($models)) {
 
-            $this->info('Creating ' . implode(', ', $this->features) . ' controllers for:' . implode(', ', $models) . ' models...');
+            // $this->info('Creating ' . implode(', ', $this->features) . ' controllers for:' . implode(', ', $models) . ' models...');
 
             foreach ($this->features as $feature) {
                 $feature = $this->toPascal($feature);
                 foreach ($models as $model) {
-                    $controllerName = $model . 'Controller';
-                    Artisan::call('make:controller', ['name' => $this->moduleNamespace . "\\Http/Controllers/$feature/$model/$controllerName"]);
+                    Artisan::call('make:controller', array_filter([
+                        'name' => $this->getNamespace() . "\\Http/Controllers/$feature/{$model}Controller",
+                        '--model' => $feature == 'Api' ? $this->getModelNamespace() . "\\$model" : null,
+                        '--api' => $feature == 'Api',
+                        '--requests' => in_array('Requests', $this->parts),
+                    ]));
                     $this->bar->advance();
                 }
             }
@@ -337,16 +311,18 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     {
         if (in_array('Repositories', $this->parts)) {
 
-            $this->info('Creating repositories file for:' . implode(', ', $models) . ' models...');
-            // foreach ($this->features as $feature) {}
-                // $feature = $this->toPascal($feature);
-            foreach ($models as $model) {
-                    $repositoryName = $model . 'Repository';
-                    Artisan::call('make:repository', ['name' => $this->moduleNamespace  . "\\Repositories\\$repositoryName"]);
-                    // Artisan::call('make:service', ['name' => $this->moduleNamespace . "\\$feature/$repositoryName"]);
+            // $this->info('Creating repositories file for:' . implode(', ', $models) . ' models...');
+            foreach ($this->features as $feature) {
+                $feature = $this->toPascal($feature);
+                foreach ($models as $model) {
+                    $repository = $model . ($feature ? $feature : '') . 'Repository';
+
+                    Artisan::call('make:repository', array_filter([
+                            'name' => $this->getNamespace()  . "\\Repositories\\$feature\\$repository"
+                        ]));
                     $this->bar->advance();
+                }
             }
-            
         }
     }
 
@@ -360,16 +336,19 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     {
         if (in_array('Services', $this->parts)) {
 
-            $this->info('Creating service file for:' . implode(', ', $models) . ' models...');
-            // foreach ($this->features as $feature) {}
-                // $feature = $this->toPascal($feature);
-            foreach ($models as $model) {
-                    $serviceName = $model . 'Service';
-                    Artisan::call('make:service', ['name' => $this->moduleNamespace  . "\\Services\\$serviceName"]);
-                    // Artisan::call('make:service', ['name' => $this->moduleNamespace . "\\$feature/$serviceName"]);
+            // $this->info('Creating service file for:' . implode(', ', $models) . ' models...');
+            foreach ($this->features as $feature) {
+                $feature = $this->toPascal($feature);
+                foreach ($models as $model) {
+                    $service = $model . ($feature ? $feature : '') . 'Service';
+
+                    Artisan::call('make:service', array_filter([
+                            'name' => $this->getNamespace()  . "\\Services\\$feature\\$service",
+                            '--api' => $feature == 'Api',
+                        ]));
                     $this->bar->advance();
+                }
             }
-            
         }
     }
 
@@ -381,18 +360,10 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     private function makeModels()
     {
         if (in_array('Models', $this->parts)) {
-            $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
-            $this->info('Creating ' . implode(', ', $this->models) . ' models...');
+            // $this->info('Creating ' . implode(', ', $this->models) . ' models...');
 
             foreach ($this->models as $model) {
-                Artisan::call('create:model', ['name' => $this->moduleNamespace . "\\Models\\$model"]);
-                foreach ($modelTraits as $traitType) {
-                    // File::ensureDirectoryExists($this->modulePath . "/Models/$model/Traits/$traitType");
-                    $traitClass = "${model}${traitType}";
-                    Artisan::call('make:trait', ['name' => $this->moduleNamespace . "\\Models\\Traits\\$traitType\\$traitClass"]);
-
-                    $this->bar->advance();
-                }
+                Artisan::call('create:model', ['name' => $this->getModelNamespace() . "\\$model"]); 
                 $this->bar->advance();
             }
         }
@@ -408,11 +379,11 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         if (in_array('Events', $this->parts)) {
             $events = ['Created', 'Deleted', 'Updated'];
 
-            $this->info('Creating events for:' . implode(', ', $this->models) . ' models...');
+            // $this->info('Creating events for:' . implode(', ', $this->models) . ' models...');
             foreach ($this->models as $model) {
                 foreach ($events as $event) {
                     $eventName = $model . $this->toPascal($event);
-                    Artisan::call('make:event', ['name' => $this->moduleNamespace . "\\Events\\$model\\$eventName"]);
+                    Artisan::call('make:event', ['name' => $this->getNamespace() . "\\Events\\$model\\$eventName"]);
                     $this->bar->advance();
                 }
             }
@@ -427,10 +398,10 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
     private function makeListeners()
     {
         if (in_array('Listeners', $this->parts)) {
-            $this->info('Creating event listeners for:' . implode(', ', $this->models) . ' models...');
+            // $this->info('Creating event listeners for:' . implode(', ', $this->models) . ' models...');
             foreach ($this->models as $model) {
                 $listenerName = $model . "EventListener";
-                Artisan::call('make:listener', ['name' => $this->moduleNamespace . "\\Listeners\\$listenerName"]);
+                Artisan::call('make:listener', ['name' => $this->getNamespace() . "\\Listeners\\$listenerName"]);
 
                 $this->bar->advance();
             }
@@ -447,14 +418,14 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         if (in_array('Requests', $this->parts)) {
             $requests = ['Store', 'Edit', 'Delete', 'Update'];
 
-            $this->info('Creating ' . implode(', ', $this->features) . ' requests for:' . implode(', ', $this->models) . ' models...');
+            // $this->info('Creating ' . implode(', ', $this->features) . ' requests for:' . implode(', ', $this->models) . ' models...');
 
             foreach ($this->features as $feature) {
                 $feature = $this->toPascal($feature);
                 foreach ($this->models as $model) {
                     foreach ($requests as $request) {
                         $requestName = $this->toPascal($request) . $model . "Request";
-                        Artisan::call('make:request', ['name' => $this->moduleNamespace . "\\Http\\Requests\\$feature\\$requestName"]);
+                        Artisan::call('make:request', ['name' => $this->getNamespace() . "\\Http\\Requests\\$feature\\$requestName"]);
 
                         $this->bar->advance();
                     }

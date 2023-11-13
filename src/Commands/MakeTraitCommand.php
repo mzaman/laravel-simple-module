@@ -31,6 +31,12 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      */
     protected $description = 'Make a Trait Class';
 
+    /**
+     * The type of class being generated.
+     *
+     * @var string
+     */
+    protected $type = 'Trait';
     protected $defaultClass = 'DefaultTrait';
     protected $defaultNamespace = 'App\\Traits';
     protected $defaultPath = 'App/Traits';
@@ -41,42 +47,40 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      */
     public function handle()
     {
-        $classBaseName = $this->getClassBaseName();
+        $className = $this->getClass();
 
         // Create the directory structure and generate relevant files
         $this->checkIfRequiredDirectoriesExist();
 
         // Second we create the trait directory
         // This will be implement by the interface class
-        $this->create($classBaseName);
+        $this->create($className);
 
     }
 
     /**
      * Create trait
      *
-     * @param string $classBaseName
+     * @param string $className
      * @return void
      */
-    public function create(string $classBaseName)
+    public function create(string $className)
     {
-        $namespace = $this->recognizeNamespace($classBaseName);
-        $class = $this->getClassName($classBaseName);
-    
-        $namespacedModel = $this->getModelNamespace();
-
+        $namespace = $this->recognizeNamespace($className);
+        $class = $this->getClassName($className);
+        
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class
         ];
 
-        $file = $this->getFile($classBaseName);
+        $file = $this->getFile($className);
         new CreateFile(
             $stubProperties,
             $file,
             $this->stubPath
         );
-        $this->line("<info>Created $classBaseName trait:</info> {$namespace}\\{$class}");
+        $this->line("<info>Created $className trait:</info> {$namespace}\\{$class}");
 
         return $namespace . "\\" . $class;
     }
@@ -86,9 +90,9 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      *
      * @return string
      */
-    private function getFile($classBaseName)
+    private function getFile($className)
     {
-        return $this->getPath() . "/$classBaseName" . ".php";
+        return $this->getPath() . "/$className" . ".php";
     }
 
 }

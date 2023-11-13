@@ -3,6 +3,7 @@
 namespace LaravelSimpleModule;
 use LaravelSimpleModule\Commands\MakeInterfaceCommand;
 use LaravelSimpleModule\Commands\MakeTraitCommand;
+use LaravelSimpleModule\Commands\CreateModelCommand;
 use LaravelSimpleModule\Commands\MakeRepositoryCommand;
 use LaravelSimpleModule\Commands\MakeServiceCommand;
 use LaravelSimpleModule\Commands\MakeModuleCommand;
@@ -47,6 +48,7 @@ class LaravelSimpleModuleServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasCommand(MakeInterfaceCommand::class)
             ->hasCommand(MakeTraitCommand::class)
+            ->hasCommand(CreateModelCommand::class)
             ->hasCommand(MakeRepositoryCommand::class)
             ->hasCommand(MakeServiceCommand::class)
             ->hasCommand(MakeModuleCommand::class);

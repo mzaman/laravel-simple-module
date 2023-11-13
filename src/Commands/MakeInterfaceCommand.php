@@ -31,6 +31,12 @@ class MakeInterfaceCommand extends Command implements PromptsForMissingInput
      */
     protected $description = 'Make an Interface Class';
 
+    /**
+     * The type of class being generated.
+     *
+     * @var string
+     */
+    protected $type = 'Interface';
     protected $defaultClass = 'DefaultInterface';
     protected $defaultNamespace = 'App\\Interface';
     protected $defaultPath = 'App/Interface';

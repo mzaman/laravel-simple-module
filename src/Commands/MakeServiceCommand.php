@@ -24,15 +24,31 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
 
     public $description = 'Create a new service class';
 
+    /**
+     * The type of class being generated.
+     *
+     * @var string
+     */
+    protected $type = 'Service';
     protected $defaultClass = 'DefaultService';
-    protected $defaultNamespace = 'App\\Services';
-    protected $defaultPath = 'App/Services';
-    protected $classSuffix = 'Service'; //config('simple-module.service_suffix', 'Service');
-    protected $interfaceSuffix = 'ServiceInterface'; //config('simple-module.service_interface_suffix', 'ServiceInterface');
-
+    protected $defaultNamespace;
+    protected $defaultPath;
+    protected $classSuffix;
+    protected $interfaceSuffix;
     protected $interfaceStubPath = __DIR__ . '/stubs/service-interface.stub';
-    protected $repositorySuffix = 'Repository'; //config("simple-module.repository_suffix");
+    protected $repositorySuffix;
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->defaultNamespace = config('simple-module.service_namespace') ?? 'App\\Services';
+        $this->defaultPath = config('simple-module.service_directory') ?? 'App/Services';
+        $this->classSuffix = config('simple-module.service_suffix', 'Service');
+        $this->interfaceSuffix = config('simple-module.service_interface_suffix', 'ServiceInterface');
+        $this->repositorySuffix = config('simple-module.repository_suffix', 'Repository');
+    }
+    
     public function handle()
     {
 

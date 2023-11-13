@@ -7,7 +7,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use LaravelSimpleModule\helpers\Search;
+use LaravelSimpleModule\Helpers\Search;
 use SplFileInfo;
 
 class SimpleModuleServiceProvider extends ServiceProvider
