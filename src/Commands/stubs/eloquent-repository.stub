@@ -1,0 +1,28 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaravelSimpleModule\Implementations\Eloquent;
+use {{ namespacedModel }}\{{ modelVariable }};
+
+/**
+ * Class {{ class }}.
+ */
+class {{ class }} extends Eloquent implements {{ interface }} { 
+
+    /**
+    * Model class to be used in this repository for the common methods inside Eloquent
+    * Don't remove or change $this->model variable name
+    * @property Model|mixed $model;
+    */
+    protected $model;
+
+    public function __construct({{ modelVariable }} $model)
+    {
+        $this->model = $model;
+    }
+
+    // Additional methods specific to {{ class }}
+    // New methods for the repository operations
+
+}

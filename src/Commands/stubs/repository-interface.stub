@@ -1,0 +1,12 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaravelSimpleModule\Repository;
+
+interface {{ interface }} extends Repository { 
+
+    // Additional methods specific to {{ interface }}
+    // New methods for the repository operations
+    
+}

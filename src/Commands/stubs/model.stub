@@ -1,0 +1,22 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ namespace }}\Traits\Attribute\{{ class }}Attribute;
+use {{ namespace }}\Traits\Method\{{ class }}Method;
+use {{ namespace }}\Traits\Relationship\{{ class }}Relationship;
+use {{ namespace }}\Traits\Scope\{{ class }}Scope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Class {{ class }}.
+ */
+class {{ class }} extends Model
+{
+    use HasFactory,
+        {{ class }}Attribute,
+        {{ class }}Method,
+        {{ class }}Relationship,
+        {{ class }}Scope;
+}

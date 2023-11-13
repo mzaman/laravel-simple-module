@@ -1,0 +1,11 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaravelSimpleModule\BaseService;
+
+interface {{ interface }} extends BaseService { 
+
+    // Additional methods specific to {{ interface }}
+    // New methods for the service operations
+}

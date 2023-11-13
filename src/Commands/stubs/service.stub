@@ -1,0 +1,26 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaravelSimpleModule\Service;
+use {{ namespacedRepository }}\{{ repositoryVariable }};
+
+/**
+ * Class {{ class }}.
+ */
+class {{ class }} extends Service implements {{ interface }} { 
+
+     /**
+     * don't change $this->repository variable name
+     * because used in extends service class
+     */
+     protected $repository;
+
+    public function __construct({{ repositoryVariable }} $repository)
+    {
+      $this->repository = $repository;
+    }
+
+    // Additional methods specific to {{ class }}
+    // New methods for the Service operations
+}

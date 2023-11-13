@@ -1,0 +1,15 @@
+<?php
+
+namespace {{ namespace }}\{{ folder }};
+
+use LaravelSimpleModule\Repository;
+use {{ namespacedInterface }}\{{ interface }};
+
+/**
+ * Class {{ class }}.
+ */
+class {{ class }} implements {{ interface }} { 
+
+    // Additional methods specific to {{ class }}
+    // New methods for the repository operations
+}

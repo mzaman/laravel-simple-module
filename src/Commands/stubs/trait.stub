@@ -1,0 +1,12 @@
+<?php
+
+namespace {{ namespace }};
+
+
+/**
+ * Trait {{ class }}.
+ */
+trait {{ class }}
+{
+  
+}
