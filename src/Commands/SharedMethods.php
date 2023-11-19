@@ -177,14 +177,17 @@ trait SharedMethods
 
     /**
      * Get interface file path
+     * @param bool $isDefault
      * @param string|null $type
      *
      * @return string
      */
-    private function getFile($type = null)
+    private function getFile($isDefault = true, $type = null)
     {
         $type = $type ?: $this->type;
-        $file = $this->getClassName($type) . ".php";
+        $file =  $isDefault
+            ? $this->getClassName($type) . ".php"
+            : "/Other/". $this->getClassName($type) . ".php";
         return $this->getClassPath() . DIRECTORY_SEPARATOR . $file;
     }
 
@@ -675,7 +678,7 @@ trait SharedMethods
             $namespacedSlice = ucwords($hasType ? $namespaceSlice . '\\' . $normalizedType : $namespaceSlice);
             return $namespacedSlice;
         }
-        
+
         // If not found, return the default root namespace
         return $this->buildNamespace($namespace, $type);
     }

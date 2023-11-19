@@ -21,8 +21,8 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         {name : The name of the repository}
         {--other : If not put, it will create an eloquent repository}?
         {--service : Create a service along with the repository}?
-        {--path : Where the repository should be created}?
-        {--model : The model class for the repository}';
+        {--path= : Where the repository should be created}?
+        {--model= : The model class for the repository}';
 
     public $description = 'Create a new repository class';
 
@@ -32,23 +32,14 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      * @var string
      */
     protected $type = 'Repository';
-    protected $defaultClass = 'DefaultRepository';
-    protected $defaultNamespace;
-    protected $defaultPath;
-    protected $classSuffix;
-    protected $interfaceSuffix;
-    protected $serviceSuffix;
     protected $interfaceStubPath = __DIR__ . '/stubs/repository-interface.stub';
+    protected $stubPath = __DIR__ . '/stubs/eloquent-repository.stub';
+    protected $customStubPath = __DIR__ . '/stubs/custom-repository.stub';
 
     public function __construct()
     {
         parent::__construct();
 
-        $this->defaultNamespace = config('simple-module.repository_namespace') ?? 'App\\Repositories';
-        $this->defaultPath = config('simple-module.repository_directory') ?? 'App/Repositories';
-        $this->classSuffix = config('simple-module.repository_suffix') ?? 'Repository';
-        $this->interfaceSuffix = config('simple-module.repository_interface_suffix') ?? 'RepositoryInterface';
-        $this->serviceSuffix = config('simple-module.service_suffix') ?? 'Service';
     }
 
 
@@ -67,44 +58,17 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
 
         // First we create the repoisitory interface in the interfaces directory
         // This will be implemented by the interface class
-        $this->createInterface($classBaseName);
+        $this->createInterface();
 
 
         // Second we create the repoisitory directory
         // This will be implement by the interface class
-        $this->create($classBaseName, ! $other);
+        $this->create(!$other);
 
         if ($this->option('service')) {
             $this->createService();
         }
     }
-
-
-    /**
-     * Determine the service namespace based on the service namespace.
-     *
-     * @return string The determined service namespace.
-     */
-    function getServiceNamespace()
-    {
-        $namespace = $this->getNamespace();
-
-        // Split the namespace by backslash ('\') into an array of segments
-        $segments = explode('\\', $namespace);
-
-        // Check if the first segment is $this->defaultNamespace
-        if (reset($segments) === $this->defaultNamespace) {
-            // If it is, return 'App\Services' as the service namespace
-            return 'App\Services';
-        }
-
-        // If not, remove the last segment to get the service namespace
-        array_pop($segments);
-
-        // Reconstruct the service namespace by joining the segments with backslash and adding '\Services'
-        return implode('\\', $segments) . '\\Services';
-    }
-
 
     /**
      * Create service for the repository
@@ -113,9 +77,7 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      */
     private function createService()
     {
-
-        $name = $this->getServiceNamespace() . '\\' . $this->getClassBaseName() . $this->serviceSuffix;
-
+        $name = $this->getConvertedClass();
         $this->call("make:service", [
             "name" => $name,
         ]);
@@ -127,50 +89,31 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      * @param string $classBaseName
      * @return void
      */
-    public function create(string $classBaseName, $isDefault = true)
+    public function create($isDefault = true)
     {
-        $namespace = $this->recognizeNamespace($classBaseName);
-        $class = $this->getClassName($classBaseName);
-        $class = $class . $this->classSuffix;
-        $interface = $classBaseName . $this->interfaceSuffix;
-
-        $model = $this->parseModelNamespaceAndClass($this->option("model"));    
-        $namespacedModel = $model['namespace'];
-        $modelVariable = $model['class'];
+        $namespace = $this->getNamespace();
+        $class = $this->getClassName();
+        $interface = $this->getInterfaceClassName();
+        $model = $this->parseModelNamespaceAndClass($this->option("model"));
 
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class,
             "{{ interface }}" => $interface,
-            "{{ namespacedModel }}"   => $namespacedModel,
-            "{{ modelVariable }}"   => $modelVariable
+            "{{ namespacedModel }}"   => $model['namespace'],
+            "{{ modelVariable }}"   => $model['class']
         ];
 
-        $stubName = $isDefault ? "eloquent-repository.stub" : "custom-repository.stub";
-        $file = $this->getFile($classBaseName, $isDefault);
+        // check command other
+        $stubPath =  $isDefault ? $this->stubPath : $this->customStubPath;
+        $file = $this->getFile($isDefault);
         new CreateFile(
             $stubProperties,
             $file,
-            __DIR__ . "/stubs/$stubName"
+            $stubPath
         );
-        $this->line("<info>Created $classBaseName repository:</info> {$namespace}\\{$class}");
+        $this->line("<info>Created $class repository:</info> {$namespace}\\{$class}");
 
         return $namespace . "\\" . $class;
     }
-
-
-    /**
-     * Get file path
-     *
-     * @return string
-     */
-    private function getFile($classBaseName, $isDefault)
-    {
-        $file = $isDefault
-            ? "/$classBaseName" . $this->classSuffix . ".php"
-            : "/Other/$classBaseName" .  $this->classSuffix . ".php";
-
-        return $this->getPath() . $file;
-    }
-
 }
