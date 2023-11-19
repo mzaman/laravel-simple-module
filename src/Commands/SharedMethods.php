@@ -9,6 +9,8 @@ use LaravelSimpleModule\CreateFile;
 trait SharedMethods
 {
 
+    protected $defaultClassPrefix = 'Default';
+
     /**
      * Prompt for missing input arguments using the returned questions.
      *
@@ -17,10 +19,11 @@ trait SharedMethods
     protected function promptForMissingArgumentsUsing()
     {
         return [
-            'name' => 'What should the '.strtolower($this->type) ?? 'class'.' be named?',
+            'name' => 'What should the '. (strtolower($this->type) ?? 'class') . ' be named?',
         ];
     }
     
+
     /**
     **
     * Map the stub variables present in stub to its value
@@ -30,53 +33,61 @@ trait SharedMethods
     */
     public function getChoices()
     {
-        $name = Str::studly($this->argument("name"));
+        $name = $this->getQualifedNameInput();
         $path = $this->option('path');
+
+        $hasNamespace = $this->hasNamespace($name);
+        list($namespace, $class) = array_values($this->parseNamespaceAndClass($name));
 
         switch (true) {
             // Case 1: name argument contains namespace, path not provided
-            case preg_match('/(.*)\\\\([a-zA-Z]+)$/', $name, $matches) && empty($path):
-                $namespace = $matches[1];
-                $className = $matches[2];
+            case $hasNamespace && empty($path):
                 $fullPath = $this->getPathFromNamespace($namespace);
                 break;
 
             // Case 2: name argument contains class name, path not provided
-            case !preg_match('/\\\\/', $name) && empty($path):
-                $namespace = $this->defaultNamespace;
-                $className = $name;
-                $fullPath = $this->defaultPath;
+            case !$hasNamespace && empty($path):
+                $fullPath = $this->getDefautPath();
                 break;
 
             // Case 3: name argument contains namespace, path provided
-            case preg_match('/(.*)\\\\([a-zA-Z]+)$/', $name, $matches) && !empty($path):
-                $namespace = $matches[1];
-                $className = $matches[2];
+            case $hasNamespace && !empty($path):
                 $fullPath = $path;
                 break;
 
             // Case 4: name argument contains class name, path provided
-            case !preg_match('/\\\\/', $name) && !empty($path):
+            case !$hasNamespace && !empty($path):
                 $namespace = $path;
-                $className = $name;
                 $fullPath = $path;
                 break;
 
             default:
                 // Handle any other cases or provide default values if needed
-                $namespace = $this->defaultNamespace;
-                $className = $this->defaultClass;
-                $fullPath = $this->defaultPath;
+                $namespace = $this->getDefautlNamespace();
+                $class = $this->getDefautlClass();
+                $fullPath = $this->getDefautPath();
                 break;
         }
 
         return [
-            'namespace' => $namespace,
-            'class' => $this->getSingularClassName($className),
-            'path' => $fullPath,
+            'namespace' => $this->getNamespaceFromPath($namespace),
+            'class' => $this->getSingularClassName($class),
+            'path' => $this->getPathFromNamespace($fullPath),
         ];
     }
 
+    public function hasNamespace($class) {
+        // If class parameter contains namespace
+        preg_match('/(.*)\\\\([a-zA-Z_][a-zA-Z0-9_\\\\]+)$/', $class, $matches);
+        if ($matches) {
+            return [
+                'namespace' => $matches[1] ?? '',
+                'class' => $matches[2] ?? ''
+            ];
+        }
+
+        return false;
+    }
 
     /**
      * Return the Singular Capitalize Name
@@ -121,21 +132,24 @@ trait SharedMethods
      */
     private function checkIfRequiredDirectoriesExist()
     {
-        $path = $this->getPath();
+        $path = $this->getClassPath();
         $this->ensureDirectoryExists($path);
     }
 
     /**
      * Create the interface
      *
-     * @param string $className
+     * @param string|null $type
      * @return void
      */
-    public function createInterface(string $classBaseName)
+    public function createInterface($type = null)
     {
-        $class = $this->getClassName($classBaseName);
-        $interface = $class . $this->interfaceSuffix;
-        $namespace = $this->recognizeNamespace($classBaseName);
+        $type = $type ?: $this->type;
+        $class = $this->getClassName($type);
+        $interface = $this->getInterfaceClassName($type);
+        $namespace = $this->getNamespace();
+        // $classBaseName = $this->getClassBaseName($type);
+        // $namespace = $this->buildNamespace($classBaseName);
 
         $stubProperties = [
             "{{ namespace }}" => $namespace,
@@ -148,7 +162,7 @@ trait SharedMethods
             File::makeDirectory($folder, 0775, true, true);
         }
 
-        $interfaceFile = $this->getInterfaceFile($classBaseName);
+        $interfaceFile = $this->getInterfaceFile();
 
         new CreateFile(
             $stubProperties,
@@ -156,20 +170,35 @@ trait SharedMethods
             $this->interfaceStubPath
         );
 
-        // $this->line("<info>Created $classBaseName  interface:</info> {$namespace}\\{$class}");
+        $this->line("<info>Created $interface interface:</info> {$namespace}\\{$interface}");
 
-        return $namespace . "\\" . $classBaseName;
+        return $namespace . "\\" . $interface;
     }
 
     /**
-     * Get repository interface path
-     * @param $classBaseName
+     * Get interface file path
+     * @param string|null $type
      *
      * @return string
      */
-    private function getInterfaceFile($classBaseName)
+    private function getFile($type = null)
     {
-        return $this->getPath() . "/$classBaseName" . $this->interfaceSuffix . ".php";
+        $type = $type ?: $this->type;
+        $file = $this->getClassName($type) . ".php";
+        return $this->getClassPath() . DIRECTORY_SEPARATOR . $file;
+    }
+
+    /**
+     * Get interface file path
+     * @param string|null $type
+     *
+     * @return string
+     */
+    private function getInterfaceFile($type = null)
+    {
+        $type = $type ?: $this->type;
+        $interfaceFile = $this->getInterfaceClassName($type) . ".php";
+        return $this->getClassPath() . DIRECTORY_SEPARATOR . $interfaceFile;
     }
 
     /**
@@ -184,22 +213,46 @@ trait SharedMethods
 
 
     /**
-     * get class name
-     * @param $classBaseName
+     * get iterface class name with suffix
      * 
+     * @param string|null $type
      * @return string
      */
-    private function getClassName($classBaseName):string {
-        $explode = explode('/', $classBaseName);
-        return $explode[array_key_last($explode)];
+    private function getInterfaceClassName($type = null) : string {
+        $type = $type ?: $this->type;
+        $suffix = $this->getInterfaceSuffix($type);
+        return $this->getClassBaseName($type) . $suffix;
     }
+
+    /**
+     * get class name with suffix
+     * 
+     * @param string|null $type
+     * @return string
+     */
+    private function getClassName($type = null) : string {
+        $type = $type ?: $this->type;
+        $suffix = $this->getSuffix($type);
+        return $this->getClassBaseName($type) . $suffix;
+    }
+
+    // /**
+    //  * get class name
+    //  * @param $classBaseName
+    //  * 
+    //  * @return string
+    //  */
+    // private function getClassName($classBaseName) : string {
+    //     $explode = explode('/', $classBaseName);
+    //     return $explode[array_key_last($explode)];
+    // }
 
     /**
      * get namespace
      * @param $classBaseName
      * @return string
      */
-    private function recognizeNamespace($classBaseName):string {
+    private function recognizeNamespace($classBaseName) : string {
         $explode = explode('\\', $classBaseName);
         if (count($explode) > 1) {
             $namespace = '';
@@ -229,23 +282,7 @@ trait SharedMethods
      */
     function getModelNamespace()
     {
-
         return $this->parseModelNamespaceAndClass()['namespace'];
-        // $namespace = $this->getNamespace();
-        // // Split the namespace by backslash ('\') into an array of segments
-        // $segments = explode('\\', $namespace);
-
-        // // Check if the first segment is 'App\Repositories'
-        // if (reset($segments) === $this->defaultNamespace) {
-        //     // If it is, return 'App\Models' as the model namespace
-        //     return 'App\Models';
-        // }
-
-        // // If not, remove the last segment to get the model namespace
-        // array_pop($segments);
-
-        // // Reconstruct the model namespace by joining the segments with backslash and adding '\Models'
-        // return implode('\\', $segments) . '\\Models';
     }
 
     /**
@@ -261,6 +298,38 @@ trait SharedMethods
     }
 
     /**
+     * Build a name corresponding to the given class.
+     *
+     * @param string|null $class
+     * @return string|null
+     */
+    public function buildClassName($class = null, array $suffixes= [])
+    {
+        $class = $class ?: $this->getNamespacedClass();
+  
+        $type = $this->type ?: $this->getDefautlNamespace();
+        $suffixes = $suffixes ?: ['Api', 'Backend', 'Frontend'];
+
+        // Remove common suffixes like 'Api', 'Backend', 'Frontend' from the last part of the repository class name
+        $classVariable = class_basename($class);
+        $commonSuffixes = [$type, ...$suffixes];
+
+        foreach ($commonSuffixes as $suffix) {
+            $commonSuffixes[] = Str::studly($suffix . $type);
+            $commonSuffixes[] = Str::studly($type . $suffix);
+        }
+
+        foreach ($commonSuffixes as $suffix) {
+            if (Str::contains($classVariable, $suffix)) {
+                $classVariable = Str::remove($suffix, $classVariable);
+    
+            }
+        }
+
+        return $classVariable;
+    }
+
+    /**
      * Get the model class corresponding to the given class.
      *
      * @param string|null $class
@@ -270,67 +339,111 @@ trait SharedMethods
     {
         $class = $class ?: $this->getNamespacedClass();
         // Get the root namespace based on the position of the type of class directory
+        $modelNamespace = $this->getRootNamespace() . '\\Models\\';
+        $modelVariable = $this->buildClassName($class);
+        // $rootNamespace = $this->getRootNamespace();
+
+        // $namespace = $this->getNamespace();
+        // // Split the namespace by backslash ('\') into an array of segments
+        // $namespaceSegments = explode('\\', $namespace);
+
+        // // Check if the first segment is $this->getDefautlNamespace()
+        // if (reset($namespaceSegments) === $this->getDefautlNamespace()) {
+        //     // If it is, return 'App\Models' as the model namespace
+        //     $modelNamespace = $this->getDefautlNamespace('Model');
+        // } else {
+        //     $modelNamespace =  $rootNamespace . '\\Models';
+        // }
+
+        // $type = $this->type ?: $this->getDefautlNamespace();
+
+        // // Remove common suffixes like 'Api', 'Backend', 'Frontend' from the last part of the repository class name
+        // $modelVariable = class_basename($class);
+        // $commonSuffixes = ['Api', 'Backend', 'Frontend', $type];
+
+
+        // foreach ($commonSuffixes as $suffix) {
+        //     $commonSuffixes[] = Str::studly($suffix . $type);
+        //     $commonSuffixes[] = Str::studly($type . $suffix);
+        // }
+
+        // foreach ($commonSuffixes as $suffix) {
+        //     if (Str::contains($modelVariable, $suffix)) {
+        //         $modelVariable = Str::remove($suffix, $modelVariable);
+    
+        //     }
+        // }
+
+        // Combine the segments to get the full model class
+        return $modelNamespace . $modelVariable;
+    }
+
+
+    /**
+     * Get the class corresponding to the given class.
+     *
+     * @param string|null $class
+     * @return string|null
+     */
+    public function getNamespacedRepositoryOrService($class = null)
+    {
+        $class = $class ?: $this->getNamespacedClass();
+        // Get the root namespace based on the position of the type of class directory
         $rootNamespace = $this->getRootNamespace($class);
 
         $namespace = $this->getNamespace();
         // Split the namespace by backslash ('\') into an array of segments
         $namespaceSegments = explode('\\', $namespace);
 
-        // Check if the first segment is $this->defaultNamespace
-        if (reset($namespaceSegments) === $this->defaultNamespace) {
-            // If it is, return 'App\Models' as the model namespace
-            $modelNamespace = config('simple-module.model_namespace') ?? 'App\\Models';
-        } else {
-            $modelNamespace =  $rootNamespace . '\\Models';
-        }
+        $classType = $this->toPascalPlural($this->type);
 
-        $type = $this->type ?: $this->defaultNamespace;
-
-        // Remove common suffixes like 'Api', 'Backend', 'Frontend' from the last part of the repository class name
-        $lastPart = class_basename($class);
-        $commonSuffixes = ['Api', 'Backend', 'Frontend', $type];
-
-
-        foreach ($commonSuffixes as $suffix) {
-            $commonSuffixes[] = Str::studly($suffix . $type);
-            $commonSuffixes[] = Str::studly($type . $suffix);
-        }
-
-        foreach ($commonSuffixes as $suffix) {
-            if (Str::contains($lastPart, $suffix)) {
-                $lastPart = Str::remove($suffix, $lastPart);
-    
+        // Check if the first segment is $this->getDefautlNamespace()
+        if (reset($namespaceSegments) === $this->getDefautlNamespace()) {
+            // If it is, return the default namespace
+            if($classType == 'Services') {
+                $classNamespace = config('simple-module.repository_namespace') ?? 'App\\Repositories';
             }
+            
+            if($classType == 'Repositories') {
+                $classNamespace = config('simple-module.service_namespace') ?? 'App\\Services';
+            }
+
+        } else {
+            if($classType == 'Services') {
+                $classNamespace = $rootNamespace . '\\Repositories';
+            }
+            
+            if($classType == 'Repositories') {
+                $classNamespace = $rootNamespace . '\\Services';
+            }
+            $classNamespace =  $rootNamespace . '\\Models';
         }
+
+        $classVariable = class_basename($class);
 
         // Combine the segments to get the full model class
-        $modelClass = $modelNamespace . '\\' . $lastPart;
+        return $classNamespace . '\\' . $classVariable;
 
-        return $modelClass;
-        
     }
 
     /**
      * Parse the namespace and class from a namespaced class.
      *
      * @param string $name The namespaced class name.
-     * @param string $type The type of the class (e.g., 'Model', 'Service', etc.).
+     * @param string|null The type of the class (e.g., 'Model', 'Service', etc.).
      *
      * @return array Associative array with 'namespace' and 'class' keys.
      */
-    public function parseNamespaceAndClass($name, $type = 'Model') {
+    public function parseNamespaceAndClass($name, $type = null) {
         // Case 1: Name parameter contains namespace
-        if (strpos($name, '\\') !== false) {
-            preg_match('/(.*)\\\\([a-zA-Z]+)$/', $name, $matches);
-            return [
-                'namespace' => $matches[1] ?? '',
-                'class' => $matches[2] ?? ''
-            ];
+        $hasNamespace = $this->hasNamespace($name);
+
+        if ($hasNamespace) {
+            return $hasNamespace;
         }
 
         // Case 2: Name parameter contains only class name
-        $normalizedType = $this->toPluralizedPascal($type);
-        $defaultNamespace = 'App\\' . $normalizedType;
+        $defaultNamespace = $this->getDefautlNamespace($type);
 
         return [
             'namespace' => $defaultNamespace,
@@ -339,28 +452,272 @@ trait SharedMethods
     }
 
     /**
-     * Get the root namespace based on the position of the type of class directory.
+     * Get the converted class based on $this->type.
      *
-     * @param string|null $class
-     * @param string|null $type
+     * @param string|null $namespace The input namespace.
+     * @param string|null $to The target type for conversion (e.g., 'Model', 'Service', etc.).
+     * @param string|null $from The source type for conversion (e.g., 'Model', 'Service', etc.).
+     * @return string The converted namespace.
+     */
+    public function getConvertedClass($namespace = null, $to = null, $from = null)
+    {
+        // Set default values if not provided
+        $from = $from ?: $this->type;
+        $namespace = $namespace ?: $this->getNamespacedClass();
+
+        switch ($from) {
+            case 'Service':
+                $to = $to ?: 'Repository';
+                break;
+            case 'Repository':
+                $to = $to ?: 'Model';
+                break;
+            default:
+                $to = $to ?: 'Repository';
+        }
+
+        // Check if the namespace contains the "from" string
+        if (Str::endsWith($namespace, $from)) {
+            // Remove "from" from the end of the namespace
+            $namespaceWithoutClass = Str::beforeLast($namespace, $from);
+
+            // Replace "from" with "to"
+            $convertedNamespace = $this->convertNamespace(
+                $namespaceWithoutClass,
+                $this->toPascalPlural($from),
+                $this->toPascalPlural($to)
+            );
+
+            // Append "to" to the singularized class name
+            $convertedClass = $convertedNamespace . $this->getSuffix($to);
+
+            return $convertedClass;
+        }
+
+        return $namespace;
+    }
+
+    /**
+     * Convert namespace based on the provided type.
+     *
+     * @param string $namespace The input namespace.
+     * @param string $from The source type for conversion (e.g., 'Model', 'Service', etc.).
+     * @param string $to The target type for conversion (e.g., 'Model', 'Service', etc.).
+     * @return string The converted namespace.
+     */
+    protected function convertNamespace($namespace, $from, $to)
+    {
+        // Check if the namespace contains the "from" string
+        if (Str::contains($namespace, $from)) {
+            // Replace "from" with "to"
+            $convertedNamespace = Str::replace($from, $to, $namespace);
+
+            return $convertedNamespace;
+        }
+
+        return $namespace;
+    }
+
+    /**
+     * get the class suffix from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
      * @return string
      */
-    private function getRootNamespace($class = null, $type = null)
-    {
-        $class = $class ?: $this->getNamespacedClass();
+    public function getSuffix($type = null) {
         $type = $type ?: $this->type;
-        $type = $this->toPluralizedPascal($type);
+        $normalizedType = $this->toPascalSingular($type);
+        $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_suffix';
+        return config($key) ?: $normalizedType;
+    }
 
+    /**
+     * get the interface class suffix from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    public function getInterfaceSuffix($type = null) {
+        $type = $type ?: $this->type;
+        $normalizedType = $this->toPascalSingular($type);
+        $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_interface_suffix';
+        return config($key) ?: $normalizedType . 'Interface';
+    }
+
+    /**
+     * get the default class name from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    public function getDefautlClass($type = null) {
+        $type = $type ?: $this->type;
+        $normalizedType = $this->toPascalSingular($type);
+        $key = 'simple-module.' . $this->toLowerSingular($type) . '_class';
+        return config($key) ?: $defaultClassPrefix . $normalizedType;
+    }
+
+    /**
+     * get the default namespace from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    public function getDefautlNamespace($type = null) {
+        $type = $type ?: $this->type;
+        $normalizedType = $this->toPascalPlural($type);
+        $key = 'simple-module.' . $this->toLowerSingular($type) . '_namespace';
+        return config($key) ?: $this->laravelNamespace() . $normalizedType;
+    }
+
+    /**
+     * get the default path from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    public function getDefautPath($type = null) {
+        $type = $type ?: $this->type;
+        $normalizedType = $this->toPascalPlural($type);
+        $key = 'simple-module.' . $this->toLowerSingular($type) . '_directory';
+        return config($key) ?: $this->laravelPath() . DIRECTORY_SEPARATOR . $normalizedType;
+    }
+
+    /**
+     * Parse the class name and format according to the root namespace.
+     *
+     * @param  string  $name
+     * @return string
+     */
+    protected function qualifyClass($name)
+    {
+        $name = ltrim($name, '\\/');
+
+        $name = str_replace('/', '\\', $name);
+
+        $laravelNamespace = $this->laravelNamespace();
+
+        if (Str::startsWith($name, $laravelNamespace)) {
+            return $name;
+        }
+
+        return $this->qualifyClass(trim($laravelNamespace, '\\').'\\'.$name
+        );
+    }
+
+    /**
+     * Get the desired class name from the input and format.
+     *
+     * @return string
+     */
+    protected function getQualifedNameInput()
+    {
+        $name = $this->getNameInput();
+        $name = ltrim($name, '\\/');
+        return str_replace('/', '\\', $name);
+    }
+
+    /**
+     * Get the desired class name from the input.
+     *
+     * @return string
+     */
+    protected function getNameInput()
+    {
+        return trim($this->argument('name'));
+    }
+
+    /**
+     * Get the root namespace for the class.
+     *
+     * @return string
+     */
+    protected function laravelNamespace()
+    {
+        return $this->laravel->getNamespace();
+    }
+
+    /**
+     * Get the root path for the class.
+     *
+     * @return string
+     */
+    protected function laravelPath()
+    {
+        return $this->laravel['path'];
+    }
+
+    /**
+     * Get the root namespace based on the position of the type of class directory.
+     *
+     * @param string|null $type
+     * @param string|null $class
+     * @return string
+     */
+    private function getRootNamespace($type = null, $class = null)
+    {
+        $hasType = $type;
+        $type = $type ?: $this->type;
+        $isNotSelfType = $hasType && $type !== $this->type;
+        $normalizedType = $this->toPascalPlural($type);
+        $class = $class ?: $this->getNamespacedClass();
+        $namespace = $this->parseNamespaceAndClass($class, $type)['namespace'];
         // Get the namespace slice based on the type
-        $namespaceSlice = $this->namespaceSlice($class, [$type]);
+        $namespaceSlice = $this->namespaceSlice($namespace, [$normalizedType]);
 
         // If the namespace slice is not empty, return it
         if (!empty($namespaceSlice)) {
-            return $namespaceSlice;
+            $namespacedSlice = ucwords($hasType ? $namespaceSlice . '\\' . $normalizedType : $namespaceSlice);
+            return $namespacedSlice;
+        }
+        
+        // If not found, return the default root namespace
+        return $this->buildNamespace($namespace, $type);
+    }
+
+    /**
+     * get namespace
+     * @param $classBaseName
+     * @param string|null $type
+     * @return string
+     */
+    private function buildNamespace($classBaseName = null, $type = null) : string {
+        $hasType = $type;
+        $type = $type ?: $this->type;
+        $isNotSelfType = $type !== $this->type;
+        $normalizedType = $this->toPascalPlural($type);
+        $class = $classBaseName ?: $this->getNamespacedClass();
+        // Get the namespace slice based on the type
+        $namespaceSlice = $this->namespaceSlice($class, [$normalizedType]);
+        $class = $this->getNamespaceFromPath($namespaceSlice ?: $class);
+        $defaultNamespace = $this->getDefautlNamespace($type);
+
+        if($this->hasNamespace($class) && $class !== $defaultNamespace){
+            $namespace = Str::start($class . '\\' . $normalizedType, $this->laravelNamespace());
+            return ucwords($namespace);
+        } else {
+            return ucwords($defaultNamespace);
         }
 
-        // If not found, return the default root namespace
-        return $this->recognizeNamespace($class);
+        // $namespace = $this->hasNamespace($class) ? $class . '\\' . $normalizedType : $this->getDefautlNamespace($type);
+
+        // $explode = explode('\\', $classBaseName);
+        // if (count($explode) > 1) {
+        //     $namespace = '';
+        //     for($i=0; $i < count($explode)-1; $i++) {
+        //         $namespace .= '\\' . $explode[$i];
+        //     }
+
+        //     echo 'buildNamespace__namespace ' . $namespace . "\n";
+        //     return $this->getNamespace() . $namespace;
+        // } else {
+        //     return $this->getNamespace();
+        // }
     }
 
     /**
@@ -372,7 +729,6 @@ trait SharedMethods
      */
     public function namespaceSlice(string $namespace, array $needles)
     {
-
         $namespace = $this->getNamespaceFromPath($namespace);
         // Extract the segments from the namespace
         $segments = explode('\\', $namespace);
@@ -381,7 +737,8 @@ trait SharedMethods
         foreach ($needles as $needle) {
             if (in_array($needle, $segments)) {
                 // Return the namespace up to the needle
-                return implode('\\', array_slice($segments, 0, array_search($needle, $segments, true)));
+                $namespaceSlice = implode('\\', array_slice($segments, 0, array_search($needle, $segments, true)));
+                return $namespaceSlice;
             }
         }
 
@@ -390,31 +747,30 @@ trait SharedMethods
     }
 
     /**
-     * Get the base name of the repository class.
+     * Get the base name of the class.
      *
+     * @param string|null $type
      * @return string
      */
-    public function getClassBaseName()
+    public function getClassBaseName($type = null)
     {
+        $suffix = $this->getSuffix($type ?: $this->type);
         $class = $this->getClass();
 
         // Extract the class name from the input
         $className = class_basename($class);
 
-        // Convert the class name to snake_case
-        $className = Str::snake($className);
-
-        // Split the snake_case string and remove the last part
-        $parts = explode('_', $className);
-        
-        // Remove the last part from the array
-        if(count($parts) > 1) {
-            array_pop($parts);
-            // Join the remaining parts and Convert the class name to PascalCase
-            $className = implode('_', $parts);
+         // Check if the string ends with $suffix
+        if (Str::endsWith($className, $suffix)) {
+            // Remove the last occurrence of $suffix from the end of the string
+            $className = Str::beforeLast($className, $suffix);
         }
 
-        $className = Str::studly($className);
+        // Use a regular expression to extract the last word as the base class name
+        if (preg_match('/\\b([a-zA-Z_][a-zA-Z0-9_]*)\b/', $className, $matches)) {
+            return $matches[1] ?? '';
+        }
+
         // return the result
         return $className;
     }
@@ -424,19 +780,24 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getPath()
+    public function getClassPath()
     {
         return $this->getChoices()['path'];
     }
 
     /**
-     * Get namespace
+     * Get the full namespace for a given class, without the class name.
      *
+     * @param  string|null  $name
      * @return string
      */
-    private function getNamespace()
+    private function getNamespace($name = null)
     {
-        return $this->getNamespaceFromPath($this->getPath());
+        if($name) {
+            return trim(implode('\\', array_slice(explode('\\', $name), 0, -1)), '\\');
+        } else { 
+            return $this->getNamespaceFromPath($this->getClassPath());
+        }
     }
 
     
@@ -446,11 +807,46 @@ trait SharedMethods
      *
      * @return string
      */
-    public function toPluralizedPascal($name)
+    public function toPascalPlural($name)
     {
         return Str::studly(Pluralizer::plural(Str::lower($name)));
     }
     
+    /**
+     * Get the lower singularized name.
+     * @param $path
+     *
+     * @return string
+     */
+    public function toLowerSingular($name)
+    {
+        return Pluralizer::singular(Str::lower($name));
+    }
+
+    /**
+     * Get the singular pascal name.
+     * @param $path
+     *
+     * @return string
+     */
+    public function toPascalSingular($name)
+    {
+        return Str::studly(Pluralizer::singular(Str::lower($name)));
+    }
+
+    /**
+     * Get the destination class path.
+     *
+     * @param  string  $name
+     * @return string
+     */
+    protected function getPath($name)
+    {
+        $name = Str::replaceFirst($this->laravelNamespace(), '', $name);
+
+        return $this->laravel['path'].'/'.str_replace('\\', '/', $name).'.php';
+    }
+
     /**
      * Get the name of class.
      *
@@ -469,6 +865,8 @@ trait SharedMethods
     private function getNamespacedClass()
     {
         return $this->getNamespace() . '\\' . $this->getClass();
+
+
     }
 
     /**
@@ -479,7 +877,7 @@ trait SharedMethods
      */
     private function getNamespaceFromPath($path)
     {
-        return str_replace('/', '\\', $path);
+        return ucwords(str_replace('/', '\\', $path));
     }
 
     /**
