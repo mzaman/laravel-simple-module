@@ -3,6 +3,11 @@
 return [
 
     /**
+     * Model name suffix
+     */
+    "model_suffix" => "Entity",
+
+    /**
      * Repository interface name suffix
      */
     "repository_interface_suffix" => "RepositoryInterface",

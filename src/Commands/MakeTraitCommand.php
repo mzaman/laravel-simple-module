@@ -37,9 +37,9 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      * @var string
      */
     protected $type = 'Trait';
-    protected $defaultClass = 'DefaultTrait';
-    protected $defaultNamespace = 'App\\Traits';
-    protected $defaultPath = 'App/Traits';
+    // protected $defaultClass = 'DefaultTrait';
+    // protected $defaultNamespace = 'App\\Traits';
+    // protected $defaultPath = 'App/Traits';
     protected $stubPath = __DIR__ . '/stubs/trait.stub';
 
     /**
@@ -54,7 +54,7 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
 
         // Second we create the trait directory
         // This will be implement by the interface class
-        $this->create($className);
+        $this->create(/*$className*/);
 
     }
 
@@ -64,35 +64,36 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      * @param string $className
      * @return void
      */
-    public function create(string $className)
+    public function create()
     {
-        $namespace = $this->recognizeNamespace($className);
-        $class = $this->getClassName($className);
-        
+        $namespace = $this->getNamespace();
+        $class = $this->getClassName();
+        $class = $this->removeLast($class, [$this->type]);
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class
         ];
 
-        $file = $this->getFile($className);
+        $file = $this->getFile();
+        $file = $this->removeLast($file, [$this->type]);
         new CreateFile(
             $stubProperties,
             $file,
             $this->stubPath
         );
-        $this->line("<info>Created $className trait:</info> {$namespace}\\{$class}");
+        $this->line("<info>Created $class trait:</info> {$namespace}\\{$class}");
 
         return $namespace . "\\" . $class;
     }
 
-    /**
-     * Get file path
-     *
-     * @return string
-     */
-    private function getFile($className)
-    {
-        return $this->getPath() . "/$className" . ".php";
-    }
+    // /**
+    //  * Get file path
+    //  *
+    //  * @return string
+    //  */
+    // private function getFile($className)
+    // {
+    //     return $this->getClassPath() . "/$className" . ".php";
+    // }
 
 }

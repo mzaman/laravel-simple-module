@@ -185,11 +185,31 @@ trait SharedMethods
     private function getFile($isDefault = true, $type = null)
     {
         $type = $type ?: $this->type;
-        $file =  $isDefault
-            ? $this->getClassName($type) . ".php"
-            : "/Other/". $this->getClassName($type) . ".php";
-        return $this->getClassPath() . DIRECTORY_SEPARATOR . $file;
+        $fileName =  $isDefault
+            ? $this->getClassName($type)
+            : "/Other/". $this->getClassName($type);
+
+        // $fileName = $this->removeLast($fileName);
+
+        return $this->getClassPath() . DIRECTORY_SEPARATOR . $fileName . '.php';
     }
+
+    /**
+     * Remove the substring from the input string
+     * @param string|null $string
+     * @param array $substrArr
+     *
+     * @return string
+     */
+    private function removeLast($string, $substrArr = ['Model', 'Trait'])
+    {
+        // Iterate through each substring in the array
+        foreach ($substrArr as $substring) {
+            // Remove the substring from the input string
+            $string = Str::replaceLast($substring, '', $string);
+        }
+        return $string;
+    }    
 
     /**
      * Get interface file path
@@ -235,7 +255,7 @@ trait SharedMethods
      */
     private function getClassName($type = null) : string {
         $type = $type ?: $this->type;
-        $suffix = $this->getSuffix($type);
+        $suffix = $this->getSuffix($type)?: null;
         return $this->getClassBaseName($type) . $suffix;
     }
 
