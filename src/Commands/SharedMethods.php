@@ -137,9 +137,57 @@ trait SharedMethods
     }
 
     /**
-     * Create the interface
+     * Create trait
+     * @param string|bool|null $suffix
      *
+     * @return string
+     */
+    public function createTrait($suffix = null)
+    {
+        $namespace = $this->getNamespace();
+        $class = $this->getClassName();
+        $file = $this->getFile();
+
+        switch (true) {
+            case is_bool($suffix) && $suffix === true:
+                $class = $this->removeLast($class, [$this->type,$this->getSuffix()]);
+                $class .= $this->getSuffix();
+                break;
+            case is_bool($suffix):
+            case empty($suffix):
+                $class = $this->removeLast($class, [$this->type]);
+                $file = $this->removeLast($file, [$this->type]);
+                break;
+            case is_string($suffix) && !empty($suffix):
+                $class = $this->removeLast($class, [$this->type, $this->getSuffix()]) . $suffix;
+                $file = $this->removeLast($file, [$this->type, $this->getSuffix(), '.php']) . $suffix . '.php';
+                break;
+            default:
+        }
+
+        $stubProperties = [
+            "{{ namespace }}" => $namespace,
+            "{{ class }}" => $class
+        ];
+
+        new CreateFile(
+            $stubProperties,
+            $file,
+            $this->stubPath
+        );
+
+        $namespacedClass = $namespace . "\\" . $class;
+        $this->line("<info>Created {$class} {$this->toLowerSingular($this->type) }:</info> {$namespacedClass}");
+
+        return $namespacedClass;
+    }
+
+
+
+    /**
+     * Create the interface
      * @param string|null $type
+     *
      * @return void
      */
     public function createInterface($type = null)
@@ -187,10 +235,7 @@ trait SharedMethods
         $type = $type ?: $this->type;
         $fileName =  $isDefault
             ? $this->getClassName($type)
-            : "/Other/". $this->getClassName($type);
-
-        // $fileName = $this->removeLast($fileName);
-
+            : "/Other/". $this->getClassName($type); 
         return $this->getClassPath() . DIRECTORY_SEPARATOR . $fileName . '.php';
     }
 

@@ -1,11 +1,11 @@
 <?php
 
-return [
+return [ 
 
     /**
-     * Model name suffix
+     * Interface name suffix
      */
-    "model_suffix" => "Entity",
+    "interface_suffix" => "Interface",
 
     /**
      * Repository interface name suffix

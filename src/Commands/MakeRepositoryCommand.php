@@ -36,13 +36,6 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
     protected $stubPath = __DIR__ . '/stubs/eloquent-repository.stub';
     protected $customStubPath = __DIR__ . '/stubs/custom-repository.stub';
 
-    public function __construct()
-    {
-        parent::__construct();
-
-    }
-
-
     /**
      * Handle the command
      *

@@ -39,14 +39,6 @@ class CreateModelCommand extends Command implements PromptsForMissingInput
     protected $type = 'Model';
     protected $stubPath = __DIR__ . '/stubs/model.stub';
 
-    // public function __construct()
-    // {
-    //     parent::__construct();
-
-    //     $this->defaultNamespace = config('simple-module.model_namespace') ?? 'App\\Models';
-    //     $this->defaultPath = config('simple-module.model_directory') ?? 'App/Models';
-    // }
-
     /**
      * Execute the console command.
      */

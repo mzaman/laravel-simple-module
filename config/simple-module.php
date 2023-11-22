@@ -12,6 +12,16 @@ return [
     "module_namespace" => "App\Modules",
 
     /**
+     * The default directory for all the interfaces
+     */
+    "interface_directory" => "app/Interfaces",
+
+    /**
+     * The default namespace for all the interfaces
+     */
+    "interface_namespace" => "App\Interfaces",
+
+    /**
      * The default directory for all the models
      */
     "model_directory" => "app/Models",

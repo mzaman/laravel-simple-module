@@ -5,7 +5,7 @@ namespace {{ namespace }};
 /**
  * Interface {{ class }}.
  */
-interface {{ class }}Interface
+interface {{ class }}
 {
 
 }
