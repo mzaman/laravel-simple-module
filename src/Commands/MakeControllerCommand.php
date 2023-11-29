@@ -199,7 +199,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildRequestsReplacements(array $replace)
     {
-        $modelClass = class_basename($this->parseModel($this->option('model')) ?: $this->getModelClass());
+        $modelClass = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
         // $controller = Str::studly($this->getBaseClassName());
 
         $requestNamespace = $this->getQualifiedNamespace('Request');
@@ -272,7 +272,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function createRequests()
     {
-        $requests = [/*'Store', */'Edit', 'Delete'/*, 'Update'*/];
+        $requests = ['Store', 'Edit', 'Delete', 'Update'];
         $namespace = $this->getQualifiedNamespace('Request');
 
         $model = Str::studly($this->getModelClass());
