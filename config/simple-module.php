@@ -2,6 +2,16 @@
 
 return [
     /**
+     * The default directory for all the requests
+     */
+    "request_directory" => "app/Requests",
+
+    /**
+     * The default namespace for all the requests
+     */
+    "request_namespace" => "App\Requests",
+
+    /**
      * The default directory for all the modules
      */
     "module_directory" => "app/Modules",
@@ -30,6 +40,16 @@ return [
      * The default namespace for all the models
      */
     "model_namespace" => "App\Models",
+
+    /**
+     * The default directory for all the policies
+     */
+    "policy_directory" => "app/Policies",
+
+    /**
+     * The default namespace for all the policies
+     */
+    "policy_namespace" => "App\Policies",
 
     /**
      * The directory for all the repositories

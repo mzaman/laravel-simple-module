@@ -20,6 +20,10 @@ class DummyClass extends Controller
     public function index(ParentDummyModelClass $ParentDummyModelVariable)
     {
         //
+
+        return view('DummyViewPath.index', [
+            'ParentDummyModelVariable' => $ParentDummyModelVariable,
+        ]);
     }
 
     /**
@@ -31,6 +35,10 @@ class DummyClass extends Controller
     public function create(ParentDummyModelClass $ParentDummyModelVariable)
     {
         //
+
+        return view('DummyViewPath.create', [
+            'ParentDummyModelVariable' => $ParentDummyModelVariable,
+        ]);
     }
 
     /**
@@ -55,6 +63,11 @@ class DummyClass extends Controller
     public function show(ParentDummyModelClass $ParentDummyModelVariable, DummyModelClass $DummyModelVariable)
     {
         //
+
+        return view('DummyViewPath.show', [
+            'ParentDummyModelVariable' => $ParentDummyModelVariable,
+            'DummyModelVariable' => $DummyModelVariable,
+        ]);
     }
 
     /**
@@ -67,6 +80,11 @@ class DummyClass extends Controller
     public function edit(ParentDummyModelClass $ParentDummyModelVariable, DummyModelClass $DummyModelVariable)
     {
         //
+
+        return view('DummyViewPath.edit', [
+            'ParentDummyModelVariable' => $ParentDummyModelVariable,
+            'DummyModelVariable' => $DummyModelVariable,
+        ]);
     }
 
     /**

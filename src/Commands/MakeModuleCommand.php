@@ -69,6 +69,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
 
         $classBaseName = $this->getClassBaseName();
         // Create the directory structure and generate relevant files
+
         $this->checkIfRequiredDirectoriesExist();
 
 
@@ -179,7 +180,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
      *
      * @return string
      */
-    public function getPath()
+    public function getClassPath()
     {
         $choices = $this->getChoices();
          
@@ -433,23 +434,4 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
             }
         }
     }
-
-
-    /**
-     * Import attribute namespaces into the generated Model class.
-     *
-     * @param string $modulePath
-     * @param string $modelClass
-     * @return void
-     */
-    // private function importAttributeNamespaces($modulePath, $modelClass)
-    // {
-    //     $module = $this->module;
-    //     $version = $this->version;
-    //     $modelPath = app_path("Domains/$version/$module/Models/$modelClass.php");
-    //     $attributeNamespace = "App\\Domains\\$version\\$module\\Models\\Traits\\Attribute\\";
-    //     $content = File::get($modelPath);
-    //     $content = str_replace('use Illuminate\\Database\\Eloquent\\Model;', "use Illuminate\\Database\\Eloquent\\Model;\nuse $attributeNamespace{$modelClass}Attribute;", $content);
-    //     File::put($modelPath, $content);
-    // }
 }

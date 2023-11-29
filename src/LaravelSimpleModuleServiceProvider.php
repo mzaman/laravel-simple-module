@@ -4,10 +4,13 @@ namespace LaravelSimpleModule;
 use LaravelSimpleModule\Commands\MakeInterfaceCommand;
 use LaravelSimpleModule\Commands\MakeTraitCommand;
 use LaravelSimpleModule\Commands\CreateModelCommand;
+use LaravelSimpleModule\Commands\MakeModelCommand;
+use LaravelSimpleModule\Commands\MakeControllerCommand;
 use LaravelSimpleModule\Commands\MakeRepositoryCommand;
 use LaravelSimpleModule\Commands\MakeServiceCommand;
 use LaravelSimpleModule\Commands\MakeModuleCommand;
-use LaravelSimpleModule\Commands\ModelMakeCommand;
+use LaravelSimpleModule\Commands\MakeViewCommand;
+// use LaravelSimpleModule\Commands\ModelMakeCommand;
 use Spatie\LaravelPackageTools\Exceptions\InvalidPackage;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -48,16 +51,25 @@ class LaravelSimpleModuleServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasCommand(MakeInterfaceCommand::class)
             ->hasCommand(MakeTraitCommand::class)
+            ->hasCommand(MakeModelCommand::class)
             ->hasCommand(CreateModelCommand::class)
+            ->hasCommand(MakeControllerCommand::class)
             ->hasCommand(MakeRepositoryCommand::class)
             ->hasCommand(MakeServiceCommand::class)
+            ->hasCommand(MakeViewCommand::class)
             ->hasCommand(MakeModuleCommand::class);
     }
 
     public function overrideCommands()
     {
+        // $this->app->extend('command.model.make', function () {
+        //     return app()->make(ModelMakeCommand::class);
+        // });
         $this->app->extend('command.model.make', function () {
-            return app()->make(ModelMakeCommand::class);
+            return app()->make(MakeModelCommand::class);
+        });
+        $this->app->extend('command.controller.make', function () {
+            return app()->make(MakeControllerCommand::class);
         });
     }
 }

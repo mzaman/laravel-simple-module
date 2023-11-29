@@ -2,10 +2,9 @@
 
 namespace DummyNamespace;
 
-use DummyFullModelClass;
+use DummyRootNamespaceHttp\Controllers\Controller;
 use DummyFullStoreRequestClass;
 use DummyFullUpdateRequestClass;
-use DummyRootNamespaceHttp\Controllers\Controller;
 use Illuminate\Http\Response;
 
 class DummyClass extends Controller
@@ -18,6 +17,10 @@ class DummyClass extends Controller
     public function index()
     {
         //
+
+        return view('DummyViewPath.index', [
+            //
+        ]);
     }
 
     /**
@@ -28,6 +31,8 @@ class DummyClass extends Controller
     public function create()
     {
         //
+
+        return view('DummyViewPath.create');
     }
 
     /**
@@ -44,33 +49,41 @@ class DummyClass extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  DummyModelClass  $DummyModelVariable
+     * @param  int  $id
      * @return Response
      */
-    public function show(DummyModelClass $DummyModelVariable)
+    public function show($id)
     {
         //
+
+        return view('DummyViewPath.show', [
+            //
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  DummyModelClass  $DummyModelVariable
+     * @param  int  $id
      * @return Response
      */
-    public function edit(DummyModelClass $DummyModelVariable)
+    public function edit($id)
     {
         //
+
+        return view('DummyViewPath.show', [
+            //
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  DummyFullUpdateRequestMethodClass  $request
-     * @param  DummyModelClass  $DummyModelVariable
+     * @param  int  $id
      * @return Response
      */
-    public function update(DummyUpdateRequestClass $request, DummyModelClass $DummyModelVariable)
+    public function update(DummyUpdateRequestClass $request, $id)
     {
         //
     }
@@ -78,10 +91,10 @@ class DummyClass extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  DummyModelClass  $DummyModelVariable
+     * @param  int  $id
      * @return Response
      */
-    public function destroy(DummyModelClass $DummyModelVariable)
+    public function destroy($id)
     {
         //
     }
