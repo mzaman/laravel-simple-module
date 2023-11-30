@@ -257,7 +257,7 @@ class MakeControllerCommand extends ControllerMakeCommand
             return;
         }
 
-        $model = $this->getQualifiedClass('Model', $this->getModelName());
+        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
         $policyName = Str::studly(class_basename($model)) . 'Policy';
         $this->call('make:policy', [
             'name' => "{$namespace}\\{$policyName}",

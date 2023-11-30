@@ -20,14 +20,15 @@ class MakeInterfaceCommand extends Command implements PromptsForMissingInput
      */
     protected $signature = 'make:interface 
                             {name : The name of the Interface}
-                            {--path= : Where the Interface should be created}';
+                            {--path= : Where the Interface should be created}
+                            {--force : Create the interface even if the interface already exists}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Make an Interface Class';
+    protected $description = 'Make an interface class';
 
     /**
      * The type of class being generated.

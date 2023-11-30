@@ -169,18 +169,64 @@ trait SharedMethods
             "{{ class }}" => $class
         ];
 
+        $namespacedClass = $namespace . "\\" . $class;
+        
+        $this->ensureAvailable($namespacedClass);
+
         new CreateFile(
             $stubProperties,
             $file,
             $this->stubPath
         );
 
-        $namespacedClass = $namespace . "\\" . $class;
         $this->line("<info>Created {$class} {$this->toLowerSingular($this->type) }:</info> {$namespacedClass}");
 
         return $namespacedClass;
     }
 
+    /**
+     * Ensure if available.
+     *
+     * @param  string  $class
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     * @return bool
+     */
+    protected function ensureAvailable($class, $type = null)
+    {
+        $type = $type ?: $this->type;
+        if ((! $this->hasOption('force') ||
+             ! $this->option('force')) &&
+             $this->exists($class, $type)) {
+            $this->components->error($type.' already exists.');
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if not exists.
+     *
+     * @param  string  $class
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     * @return bool
+     */
+    protected function notExists($class, $type = null)
+    {
+        return !$this->exists($class, $type);
+    }
+
+    /**
+     * Determine if already exists.
+     *
+     * @param  string  $name
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     * @return bool
+     */
+    protected function exists($name, $type = null)
+    {
+        $name = $this->getQualifiedClass($name, $type);
+        return interface_exists($name) || trait_exists($name) || class_exists($name);
+    }
 
 
     /**
@@ -811,7 +857,7 @@ trait SharedMethods
         ];
     }
 
-    protected function getQualifiedClass($type = null, $class = null) 
+    protected function getQualifiedClass($class = null, $type = null) 
     {
         $class = ltrim($class, '\\/');
         $class = str_replace('/', '\\', $class);
