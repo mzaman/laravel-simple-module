@@ -20,14 +20,15 @@ class MakeTraitCommand extends Command implements PromptsForMissingInput
      */
     protected $signature = 'make:trait 
                             {name : The name of the Trait}
-                            {--path= : Where the Trait should be created}';
+                            {--path= : Where the Trait should be created}
+                            {--force : Create the trait even if the trait already exists}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Make a Trait Class';
+    protected $description = 'Make a trait class';
 
     /**
      * The type of class being generated.
