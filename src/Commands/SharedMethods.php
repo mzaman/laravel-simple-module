@@ -170,9 +170,7 @@ trait SharedMethods
         ];
 
         $namespacedClass = $namespace . "\\" . $class;
-        
-        $this->ensureAvailable($namespacedClass);
-
+		$this->handleAvailability($namespacedClass);
         new CreateFile(
             $stubProperties,
             $file,
@@ -185,19 +183,36 @@ trait SharedMethods
     }
 
     /**
-     * Ensure if available.
+     * Handle availability.
      *
      * @param  string  $class
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      * @return bool
      */
-    protected function ensureAvailable($class, $type = null)
+    protected function handleAvailability($class, $type = null)
+    {
+        $type = $type ?: $this->type;
+        if (!$this->isAvailable($class, $type)) {
+            $this->components->error($type.' already exists.');
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if available.
+     *
+     * @param  string  $class
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     * @return bool
+     */
+    protected function isAvailable($class, $type = null)
     {
         $type = $type ?: $this->type;
         if ((! $this->hasOption('force') ||
              ! $this->option('force')) &&
              $this->exists($class, $type)) {
-            $this->components->error($type.' already exists.');
+            return false;
         }
 
         return true;
@@ -859,10 +874,10 @@ trait SharedMethods
 
     protected function getQualifiedClass($class = null, $type = null) 
     {
-        $class = ltrim($class, '\\/');
-        $class = str_replace('/', '\\', $class);
         $type = $type ?: $this->type;
         $class = $class ?: $this->getNamespacedClass();
+        $class = ltrim($class, '\\/');
+        $class = str_replace('/', '\\', $class);
         $class = implode('\\', $this->parseNamespaceAndClass($class, $type));
         return $class;
     }

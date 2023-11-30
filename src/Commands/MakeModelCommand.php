@@ -20,7 +20,9 @@ class MakeModelCommand extends ModelMakeCommand
         if (parent::handle() === false && ! $this->option('force')) {
             return false;
         }
-
+        // $class = $this->getQualifiedClass();
+        // $this->handleAvailability($class);
+        // dd($this->isAvailable($class));
         if ($this->option('all')) {
             // $this->input->setOption('module', true);
             $this->input->setOption('service', true);
@@ -47,8 +49,17 @@ class MakeModelCommand extends ModelMakeCommand
         $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
 
         foreach ($modelTraits as $traitType) { 
-            $traitClass = "{$class}{$traitType}";
-            $this->call('make:trait', ['name' => "$namespace\\Traits\\$traitType\\$traitClass"]);
+            $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
+            $exists = $this->isAvailable($traitClass, 'Trait');
+            if (!$this->isAvailable($traitClass, 'Trait')) {
+                $this->components->error('Trait of Model '. $traitType . ' already exists.');
+            } else {
+                $this->call('make:trait', [
+                    'name' => $traitClass,
+                    '--force' => $this->isAvailable($class)
+                ]);
+
+            }
         }
     }
 
@@ -143,7 +154,7 @@ class MakeModelCommand extends ModelMakeCommand
             ['controller', 'c', InputOption::VALUE_NONE, 'Create a new controller for the model with request classes, views and a policy'],
 
             ['path', 'D', InputOption::VALUE_OPTIONAL, 'Where the controller should be created if specified'],
-            
+
             ['repository', 'rt', InputOption::VALUE_NONE, 'Create a new repository file for the model'],
 
             ['resource', 'r', InputOption::VALUE_NONE, 'Indicates if the generated controller should be a resource controller with request classes, views and a policy'],
