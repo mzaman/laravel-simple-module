@@ -19,17 +19,21 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     public function handle()
     {
-        if (parent::handle() === false && ! $this->option('force')) {
-            return false;
+        if(!$this->isAvailable()){
+            $this->handleAvailability();
         }
+        // if (parent::handle() === false && ! $this->option('force')) {
+        //     $this->handleAvailability();
+        // }
 
         if ($this->option('requests')) {
             $this->createRequests();
         }
 
-        if ($this->option('policy')) {
-            $this->createPolicy();
-        }
+        $this->createPolicy();
+        // if ($this->option('policy')) {
+        //     $this->createPolicy();
+        // }
 
         if ($this->option('views') && ! $this->option('api')) {
             $this->createViews();
@@ -251,18 +255,21 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function createPolicy()
     {
-        $policy = $this->option('policy');
-        $namespace = $this->getQualifiedNamespace('Policy');
-        if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
-            return;
-        }
 
-        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
-        $policyName = Str::studly(class_basename($model)) . 'Policy';
-        $this->call('make:policy', [
-            'name' => "{$namespace}\\{$policyName}",
-            '--model' => $model,
-        ]);
+        // $model = $this->getQualifiedClass($this->getModelName(), 'Model');
+        $this->qualifyOptionCreate('policy');
+        // $policy = $this->option('policy');
+        // $namespace = $this->getQualifiedNamespace('Policy');
+        // if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
+        //     return;
+        // }
+
+        // $model = $this->getQualifiedClass($this->getModelName(), 'Model');
+        // $policyName = Str::studly(class_basename($model)) . 'Policy';
+        // $this->call('make:policy', [
+        //     'name' => "{$namespace}\\{$policyName}",
+        //     '--model' => $model,
+        // ]);
     }
 
     /**
@@ -354,7 +361,7 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $options = [
             ['path', 'D', InputOption::VALUE_OPTIONAL, 'Where the controller should be created if specified'],
-            ['policy', 'P', InputOption::VALUE_OPTIONAL, 'Create a new policy'],
+            ['policy', 'P', InputOption::VALUE_OPTIONAL, 'Create a new policy', false],
             ['requests', 'R', InputOption::VALUE_NONE, 'Create new request classes'],
             ['views', null, InputOption::VALUE_NONE, 'Create new view files if the controller is not for the API'],
         ];

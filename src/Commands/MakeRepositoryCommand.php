@@ -18,11 +18,12 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
 
 
     public $signature = 'make:repository
-        {name : The name of the repository}
-        {--other : If not put, it will create an eloquent repository}?
-        {--service : Create a service along with the repository}?
-        {--path= : Where the repository should be created}?
-        {--model= : The model class for the repository}';
+                        {name : The name of the repository}
+                        {--other : If not put, it will create an eloquent repository}?
+                        {--service : Create a service along with the repository}?
+                        {--path= : Where the repository should be created}?
+                        {--model= : The model class for the repository}
+                        {--force : Create the class even if the service already exists}';
 
     public $description = 'Create a new repository class';
 
@@ -43,20 +44,16 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      */
     public function handle()
     {
-        $classBaseName = $this->getClassBaseName();
+        // $classBaseName = $this->getClassBaseName();
         $other = $this->option("other");
 
         // Create the directory structure and generate relevant files
         $this->checkIfRequiredDirectoriesExist();
 
-        // First we create the repoisitory interface in the interfaces directory
+        // First we create the repository interface in the interfaces directory
         // This will be implemented by the interface class
         $this->createInterface();
-
-
-        // Second we create the repoisitory directory
-        // This will be implement by the interface class
-        $this->create(!$other);
+            $this->create(!$other);
 
         if ($this->option('service')) {
             $this->createService();
@@ -79,7 +76,7 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
     /**
      * Create repository
      *
-     * @param string $classBaseName
+     * @param bool $isDefault
      * @return void
      */
     public function create($isDefault = true)
@@ -97,16 +94,31 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
             "{{ modelVariable }}"   => $model['class']
         ];
 
-        // check command other
-        $stubPath =  $isDefault ? $this->stubPath : $this->customStubPath;
-        $file = $this->getFile($isDefault);
-        new CreateFile(
-            $stubProperties,
-            $file,
-            $stubPath
-        );
-        $this->line("<info>Created $class repository:</info> {$namespace}\\{$class}");
+        $namespacedClass = $namespace . "\\" . $class;
 
-        return $namespace . "\\" . $class;
+        if($this->isAvailable($namespacedClass, $this->type)) {
+            // check folder exist
+            $folder = str_replace('\\','/', $namespace);
+            if (!file_exists($folder)) {
+                File::makeDirectory($folder, 0775, true, true);
+            }
+
+            // check command other
+            $stubPath =  $isDefault ? $this->stubPath : $this->customStubPath;
+            $file = $this->getFile($isDefault);
+            new CreateFile(
+                $stubProperties,
+                $file,
+                $stubPath
+            );
+
+            $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
+
+            $path = $this->getPath($namespacedClass);
+            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+            return $namespacedClass;
+        } else {
+            $this->handleAvailability($namespacedClass, $this->type);
+        }
     }
 }

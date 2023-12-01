@@ -170,33 +170,129 @@ trait SharedMethods
         ];
 
         $namespacedClass = $namespace . "\\" . $class;
-		$this->handleAvailability($namespacedClass);
-        new CreateFile(
-            $stubProperties,
-            $file,
-            $this->stubPath
-        );
 
-        $this->line("<info>Created {$class} {$this->toLowerSingular($this->type) }:</info> {$namespacedClass}");
+        if($this->isAvailable()) {
 
-        return $namespacedClass;
+            new CreateFile(
+                $stubProperties,
+                $file,
+                $this->stubPath
+            );
+
+            // $this->line("<info>Created {$class} {$this->toLowerSingular($this->type) }:</info> {$namespacedClass}");
+
+            $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
+            $path = $this->getPath($namespacedClass);
+            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+
+            return $namespacedClass;
+
+        } else {
+            $this->handleAvailability($namespacedClass);
+        }
+
+
+    }
+
+    /**
+     * Create model traits
+     *
+     * @return void
+     */
+    protected function createModelTraits()
+    {
+        $model = $this->parseModelNamespaceAndClass($this->option("path"));
+        $namespace = $model['namespace'];
+        $class = $model['class'];
+
+        $class = $this->removeLast($class, [$this->type]);
+        // $classBaseName = $this->getClassBaseName();
+        // Create model traits
+        $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
+
+        foreach ($modelTraits as $traitType) { 
+            $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
+            $exists = $this->isAvailable($traitClass, 'Trait');
+            if (!$this->isAvailable($traitClass, 'Trait')) {
+                $this->components->error("Model Trait {$class}{$traitType} [". $traitClass . "] already exists.");
+            } else {
+                $this->call('make:trait', [
+                    'name' => $traitClass,
+                    '--force' => $this->isAvailable($traitClass)
+                ]);
+            }
+        }
     }
 
     /**
      * Handle availability.
      *
-     * @param  string  $class
+     * @param  string|null  $class
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      * @return bool
      */
-    protected function handleAvailability($class, $type = null)
+    protected function handleAvailability($class = null, $type = null)
     {
         $type = $type ?: $this->type;
         if (!$this->isAvailable($class, $type)) {
-            $this->components->error($type.' already exists.');
+            $this->components->error("<fg=yellow>{$type}</> {$class} already exists.");
         }
 
         return true;
+    }
+    
+    /**
+     * Create the qualified option based on $type.
+     *
+     * @param string $type The target type for conversion (e.g., 'Model', 'Service', etc.).
+     * @return void
+     */
+    protected function qualifyOptionCreate($type, $model = null) {
+        $type = $this->toLowerSingular($type);
+        $name = $this->qualifyOption($type);
+        // dd($type, $name);
+        if($name) {
+            $this->call("make:{$type}", array_filter([
+                "name" => $name,
+                '--model' => $model ? $this->qualifyOption($model, 'Model') : null,
+                "--force" => $this->isAvailable($name, $type)
+            ]));
+        }
+    }
+
+    /**
+     * Get the qualified option based on $this->type.
+     *
+     * @param string $name
+     * @param string|null $type The target type for conversion (e.g., 'Model', 'Service', etc.).
+     * @return string The converted class.
+     */
+    protected function qualifyOption($name, $type = null)
+    {
+        $option = $this->option($name);
+
+        // When option is not provided
+        if(is_bool($option) && !$option) {
+            return $option;
+        }
+
+        $class = class_basename($this->getModelClass());
+        $normalizedType = $this->toPascalSingular($type ?: $name);
+        $namespace = $this->getQualifiedNamespace($normalizedType);
+        $suffix = $this->getSuffix($normalizedType);
+
+        // When option is expected, but name is not provided
+        if(is_null($option)) {
+            return "{$namespace}\\{$class}\\{$class}{$suffix}";
+        }
+
+        // When option is expected, but name is provided
+        if(is_string($option)) {
+            return $this->getQualifiedClass($option, $normalizedType);
+        }
+
+        return $option;
+
     }
 
     /**
@@ -206,7 +302,7 @@ trait SharedMethods
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      * @return bool
      */
-    protected function isAvailable($class, $type = null)
+    protected function isAvailable($class = null, $type = null)
     {
         $type = $type ?: $this->type;
         if ((! $this->hasOption('force') ||
@@ -221,11 +317,11 @@ trait SharedMethods
     /**
      * Determine if not exists.
      *
-     * @param  string  $class
+     * @param  string|null  $class
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      * @return bool
      */
-    protected function notExists($class, $type = null)
+    protected function notExists($class = null, $type = null)
     {
         return !$this->exists($class, $type);
     }
@@ -233,11 +329,11 @@ trait SharedMethods
     /**
      * Determine if already exists.
      *
-     * @param  string  $name
+     * @param  string|null  $name
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      * @return bool
      */
-    protected function exists($name, $type = null)
+    protected function exists($name = null, $type = null)
     {
         $name = $this->getQualifiedClass($name, $type);
         return interface_exists($name) || trait_exists($name) || class_exists($name);
@@ -264,23 +360,35 @@ trait SharedMethods
             "{{ interface }}" => $interface,
         ];
 
-        // check folder exist
-        $folder = str_replace('\\','/', $namespace);
-        if (!file_exists($folder)) {
-            File::makeDirectory($folder, 0775, true, true);
-        }
 
         $interfaceFile = $this->getInterfaceFile();
 
-        new CreateFile(
-            $stubProperties,
-            $interfaceFile,
-            $this->interfaceStubPath
-        );
+        $namespacedInterface = $namespace . "\\" . $interface;
 
-        $this->line("<info>Created $interface interface:</info> {$namespace}\\{$interface}");
+        if($this->isAvailable($namespacedInterface, 'Interface')) {
+            // check folder exist
+            $folder = str_replace('\\','/', $namespace);
+            if (!file_exists($folder)) {
+                File::makeDirectory($folder, 0775, true, true);
+            }
 
-        return $namespace . "\\" . $interface;
+            new CreateFile(
+                $stubProperties,
+                $interfaceFile,
+                $this->interfaceStubPath
+            );
+
+            // $this->line("<info>Created $interface interface:</info> {$namespacedInterface}");
+
+            $info = "<fg=yellow>{$this->type} Interface <fg=green>{$interface}</> [{$namespacedInterface}]";
+            $path = $this->getPath($namespacedInterface);
+            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+
+            return $namespacedInterface;
+        } else {
+            $this->handleAvailability($namespacedInterface);
+        }
+
     }
 
     /**

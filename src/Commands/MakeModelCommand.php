@@ -17,51 +17,23 @@ class MakeModelCommand extends ModelMakeCommand
      */
     public function handle()
     {
+        $this->createModelTraits();
+
         if (parent::handle() === false && ! $this->option('force')) {
-            return false;
+            $this->handleAvailability();
         }
         // $class = $this->getQualifiedClass();
         // $this->handleAvailability($class);
-        // dd($this->isAvailable($class));
+        $this->qualifyOptionCreate('service');
+        $this->qualifyOptionCreate('repository');
+
         if ($this->option('all')) {
             // $this->input->setOption('module', true);
             $this->input->setOption('service', true);
             $this->input->setOption('repository', true);
-        }
-
-        $this->createModelTraits();
+        } 
     }
 
-    /**
-     * Create model traits
-     *
-     * @return void
-     */
-    protected function createModelTraits()
-    {
-        $model = $this->parseModelNamespaceAndClass($this->option("path"));
-        $namespace = $model['namespace'];
-        $class = $model['class'];
-
-        $class = $this->removeLast($class, [$this->type]);
-        // $classBaseName = $this->getClassBaseName();
-        // Create model traits
-        $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
-
-        foreach ($modelTraits as $traitType) { 
-            $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
-            $exists = $this->isAvailable($traitClass, 'Trait');
-            if (!$this->isAvailable($traitClass, 'Trait')) {
-                $this->components->error('Trait of Model '. $traitType . ' already exists.');
-            } else {
-                $this->call('make:trait', [
-                    'name' => $traitClass,
-                    '--force' => $this->isAvailable($class)
-                ]);
-
-            }
-        }
-    }
 
     /**
      * Get the stub file for the generator.
@@ -111,36 +83,6 @@ class MakeModelCommand extends ModelMakeCommand
         $this->call('make:controller', $options);
     }
 
-
-    /**
-     * Create service for the model
-     *
-     * @return void
-     */
-    private function createService()
-    {
-        $name = Str::studly($this->argument('name'));
-
-        $this->call("make:service", [
-            "name" => $name,
-        ]);
-    }
-
-
-    /**
-     * Create a repository
-     *
-     * @return void
-     */
-    private function createRepository()
-    {
-        $name = Str::studly($this->argument('name'));
-
-        $this->call("make:repository", [
-            "name" => $name,
-        ]);
-    }
-
     /**
      * Get the console command options.
      *
@@ -155,11 +97,11 @@ class MakeModelCommand extends ModelMakeCommand
 
             ['path', 'D', InputOption::VALUE_OPTIONAL, 'Where the controller should be created if specified'],
 
-            ['repository', 'rt', InputOption::VALUE_NONE, 'Create a new repository file for the model'],
+            ['repository', 'rt', InputOption::VALUE_OPTIONAL, 'Create a new repository file for the model', false],
 
             ['resource', 'r', InputOption::VALUE_NONE, 'Indicates if the generated controller should be a resource controller with request classes, views and a policy'],
 
-            ['service', 'sr', InputOption::VALUE_NONE, 'Create a new service file for the model'],
+            ['service', 'sr', InputOption::VALUE_OPTIONAL, 'Create a new service file for the model', false],
         ];
 
         $mergedOptions = array_merge(parent::getOptions(), $options);
