@@ -152,30 +152,6 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
 
 
     /**
-     * Simplified method for handling choices and default values.
-     *
-     * @param string $question
-     * @param array $choices
-     * @param int $defaultIndex
-     * @param bool $allowMultipleSelections
-     * @return array
-     */
-    private function handleChoices($question, $choices, $defaultIndex = 0, $allowMultipleSelections = true)
-    {
-        $commonChoices = ['All', 'None'];
-        $selectedChoices = $this->choice($question,  [...$commonChoices, ...$choices], $defaultIndex, $maxAttempts = null, $allowMultipleSelections);
-        
-        if (in_array('All', $selectedChoices)) {
-            return $choices;
-        } elseif (in_array('None', $selectedChoices)) {
-            return [];
-        } else {
-            return $this->removeByValues($selectedChoices, $commonChoices);;
-        }
-    }
-
-
-    /**
      * Get the full path of the generated class file.
      *
      * @return string
@@ -364,7 +340,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
             // $this->info('Creating ' . implode(', ', $this->models) . ' models...');
 
             foreach ($this->models as $model) {
-                Artisan::call('create:model', ['name' => $this->getModelNamespace() . "\\$model"]); 
+                Artisan::call('make:model', ['name' => $this->getModelNamespace() . "\\$model"]); 
                 $this->bar->advance();
             }
         }
@@ -425,8 +401,10 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 $feature = $this->toPascal($feature);
                 foreach ($this->models as $model) {
                     foreach ($requests as $request) {
+                        $namespace = "\\Http\\Requests\\$feature";
                         $requestName = $this->toPascal($request) . $model . "Request";
-                        Artisan::call('make:request', ['name' => $this->getNamespace() . "\\Http\\Requests\\$feature\\$requestName"]);
+                        $this->createRequest("{$namespace}\\{$requestName}");
+                        // Artisan::call('make:request', ['name' => $this->getNamespace() . "\\Http\\Requests\\$feature\\$requestName"]);
 
                         $this->bar->advance();
                     }

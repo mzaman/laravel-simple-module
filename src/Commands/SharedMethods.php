@@ -10,7 +10,7 @@ trait SharedMethods
 {
 
     protected $defaultClassPrefix = 'Default';
-
+    protected $isFresh = true;
     /**
      * Prompt for missing input arguments using the returned questions.
      *
@@ -222,24 +222,7 @@ trait SharedMethods
                 ]);
             }
         }
-    }
-
-    /**
-     * Handle availability.
-     *
-     * @param  string|null  $class
-     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
-     * @return bool
-     */
-    protected function handleAvailability($class = null, $type = null)
-    {
-        $type = $type ?: $this->type;
-        if (!$this->isAvailable($class, $type)) {
-            $this->components->error("<fg=yellow>{$type}</> {$class} already exists.");
-        }
-
-        return true;
-    }
+    } 
     
     /**
      * Create the qualified option based on $type.
@@ -261,6 +244,22 @@ trait SharedMethods
     }
 
     /**
+     * Create request file for the model.
+     *
+     * @param  string|null  $name
+     * @param bool|null $isFresh Create a fresh request file 
+     * @return void
+     */
+    protected function createRequest($name, $isFresh = null)
+    {
+        $isFresh = $isFresh ?: ($this->isFresh ? $this->isAvailable() : false);
+        $this->call('make:request', array_filter([
+            'name' => $name,
+            '--force' => $isFresh
+        ]));
+    }
+
+    /**
      * Get the qualified option based on $this->type.
      *
      * @param string $name
@@ -276,14 +275,15 @@ trait SharedMethods
             return $option;
         }
 
-        $class = class_basename($this->getModelClass());
+        $class = $this->getClassBaseName();
+        // $class = class_basename($this->getModelClass());
         $normalizedType = $this->toPascalSingular($type ?: $name);
         $namespace = $this->getQualifiedNamespace($normalizedType);
         $suffix = $this->getSuffix($normalizedType);
 
         // When option is expected, but name is not provided
         if(is_null($option)) {
-            return "{$namespace}\\{$class}\\{$class}{$suffix}";
+            return "{$namespace}\\{$class}{$suffix}";
         }
 
         // When option is expected, but name is provided
@@ -296,6 +296,55 @@ trait SharedMethods
     }
 
     /**
+     * Simplified method for handling choices and default values.
+     *
+     * @param string $question
+     * @param array $choices
+     * @param array $commonChoices
+     * @param int $defaultIndex
+     * @param bool $allowMultipleSelections
+     * @return array
+     */
+    protected function handleChoices($question, $choices, $commonChoices = ['All', 'None'], $defaultIndex = 0, $allowMultipleSelections = true)
+    {
+        $selectedChoices = $this->choice($question,  [...$commonChoices, ...$choices], $defaultIndex, $maxAttempts = null, $allowMultipleSelections);
+        
+        if (in_array($commonChoices[0], $selectedChoices)) {
+            return $choices;
+        } elseif (in_array($commonChoices[1], $selectedChoices)) {
+            return [];
+        } else {
+            return $this->removeByValues($selectedChoices, $commonChoices);;
+        }
+    }
+
+    /**
+     * Handle availability.
+     *
+     * @param  string|null  $class
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     * @return bool
+     */
+    protected function handleAvailability($class = null, $type = null)
+    {
+        $type = $type ?: $this->type;
+        $isAvailable = $this->isAvailable($class, $type);
+        $class = $this->getQualifiedClass($class, $type);
+        if (!$isAvailable) {
+            $this->components->error("<fg=yellow>{$type}</> [{$class}] <fg=yellow>already exists.</>");
+
+            if ($this->confirm('Do you wish to replace...?', false)) {
+                $this->input->setOption('force', true);
+                parent::handle();
+
+            }
+        }
+
+
+        return true;
+    }
+
+    /**
      * Check if available.
      *
      * @param  string  $class
@@ -305,13 +354,11 @@ trait SharedMethods
     protected function isAvailable($class = null, $type = null)
     {
         $type = $type ?: $this->type;
-        if ((! $this->hasOption('force') ||
-             ! $this->option('force')) &&
-             $this->exists($class, $type)) {
-            return false;
-        }
+        $exists = $this->exists($class, $type);
+        $isAvailable = (! $this->hasOption('force') ||
+             ! $this->option('force')) && $exists ? false : true; 
 
-        return true;
+        return $isAvailable ? $exists : $isAvailable;
     }
 
     /**
@@ -336,7 +383,7 @@ trait SharedMethods
     protected function exists($name = null, $type = null)
     {
         $name = $this->getQualifiedClass($name, $type);
-        return interface_exists($name) || trait_exists($name) || class_exists($name);
+        return (interface_exists($name) || trait_exists($name) || class_exists($name)) ? $name : false;
     }
 
 
@@ -564,6 +611,18 @@ trait SharedMethods
     function getModelClass()
     {
         return $this->parseModelNamespaceAndClass()['class'];
+    }
+
+    /**
+     * Get the class name of the grandparent class.
+     *
+     * @return string
+     */
+    protected function getGrandparentClass()
+    {
+        return get_parent_class(
+            get_parent_class($this)
+        );
     }
 
     /**
@@ -1125,6 +1184,16 @@ trait SharedMethods
 
         // return the result
         return $className;
+    }
+
+    /**
+     * Get the path with the name of the class without the controller suffix.
+     *
+     * @return string
+     */
+    protected function getBaseClassName()
+    {
+        return $this->getClassBaseName();
     }
 
     /**

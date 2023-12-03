@@ -10,6 +10,7 @@ use LaravelSimpleModule\Commands\SharedMethods;
 class MakeControllerCommand extends ControllerMakeCommand
 {
     use SharedMethods;
+    // protected $isFresh = true;
     /**
      * Execute the console command.
      *
@@ -19,18 +20,16 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     public function handle()
     {
-        if(!$this->isAvailable()){
+        if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
-        // if (parent::handle() === false && ! $this->option('force')) {
-        //     $this->handleAvailability();
-        // }
 
         if ($this->option('requests')) {
             $this->createRequests();
         }
 
-        $this->createPolicy();
+        $this->qualifyOptionCreate('policy');
+
         // if ($this->option('policy')) {
         //     $this->createPolicy();
         // }
@@ -179,19 +178,19 @@ class MakeControllerCommand extends ControllerMakeCommand
         $namespace = $this->getQualifiedNamespace('Request');
 
         // $namespace = 'App\Http\Requests';
-        // dd($modelClass, $this->getQualifiedNamespace('Request'));
         $storeRequestClass = 'Store'.class_basename($modelClass).'Request';
 
-        $this->call('make:request', [
-            'name' => "{$namespace}\\{$storeRequestClass}",
-        ]);
+        $this->createRequest("{$namespace}\\{$storeRequestClass}");
+        // $this->call('make:request', [
+        //     'name' => "{$namespace}\\{$storeRequestClass}",
+        // ]);
 
         $updateRequestClass = 'Update'.class_basename($modelClass).'Request';
 
-        $this->call('make:request', [
-            'name' => "{$namespace}\\{$updateRequestClass}",
-        ]);
-
+        $this->createRequest("{$namespace}\\{$updateRequestClass}");
+        // $this->call('make:request', [
+        //     'name' => "{$namespace}\\{$updateRequestClass}",
+        // ]);
         return [$storeRequestClass, $updateRequestClass];
     }
 
@@ -256,20 +255,19 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createPolicy()
     {
 
-        // $model = $this->getQualifiedClass($this->getModelName(), 'Model');
-        $this->qualifyOptionCreate('policy');
-        // $policy = $this->option('policy');
-        // $namespace = $this->getQualifiedNamespace('Policy');
-        // if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
-        //     return;
-        // }
+        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
+        $policy = $this->option('policy');
+        $namespace = $this->getQualifiedNamespace('Policy');
+        if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
+            return;
+        }
 
-        // $model = $this->getQualifiedClass($this->getModelName(), 'Model');
-        // $policyName = Str::studly(class_basename($model)) . 'Policy';
-        // $this->call('make:policy', [
-        //     'name' => "{$namespace}\\{$policyName}",
-        //     '--model' => $model,
-        // ]);
+        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
+        $policyName = Str::studly(class_basename($model)) . 'Policy';
+        $this->call('make:policy', [
+            'name' => "{$namespace}\\{$policyName}",
+            '--model' => $model,
+        ]);
     }
 
     /**
@@ -282,17 +280,15 @@ class MakeControllerCommand extends ControllerMakeCommand
         $requests = ['Store', 'Edit', 'Delete', 'Update'];
         $namespace = $this->getQualifiedNamespace('Request');
 
-        $model = Str::studly($this->getModelClass());
-
+        $model = Str::studly($this->getModelClass()); 
 
         foreach ($requests as $request) {
             $requestName =  $request . $model . "Request";
-            $this->call('make:request', [
-                'name' => "{$namespace}\\{$requestName}",
-            ]);
+            $this->createRequest("{$namespace}\\{$requestName}");
         }
     }
 
+    
     /**
      * Create the views for the model.
      *
@@ -369,16 +365,16 @@ class MakeControllerCommand extends ControllerMakeCommand
         return array_merge(parent::getOptions(), $options);
     }
 
-    /**
-     * Get the path with the name of the class without the controller suffix.
-     *
-     * @return string
-     */
-    protected function getBaseClassName()
-    {
-        return $this->getClassBaseName();
-        // return preg_replace('/Controller$/', '', $this->argument('name'));
-    }
+    // /**
+    //  * Get the path with the name of the class without the controller suffix.
+    //  *
+    //  * @return string
+    //  */
+    // protected function getBaseClassName()
+    // {
+    //     return $this->getClassBaseName();
+    //     // return preg_replace('/Controller$/', '', $this->argument('name'));
+    // }
 
     /**
      * Get the model class name with the path.
@@ -393,17 +389,5 @@ class MakeControllerCommand extends ControllerMakeCommand
         }
 
         return $this->getBaseClassName();
-    }
-
-    /**
-     * Get the class name of the grandparent class.
-     *
-     * @return string
-     */
-    protected function getGrandparentClass()
-    {
-        return get_parent_class(
-            get_parent_class($this)
-        );
-    }
+    } 
 }

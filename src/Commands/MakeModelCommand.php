@@ -19,9 +19,10 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $this->createModelTraits();
 
-        if (parent::handle() === false && ! $this->option('force')) {
+        if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
+
         // $class = $this->getQualifiedClass();
         // $this->handleAvailability($class);
         $this->qualifyOptionCreate('service');
