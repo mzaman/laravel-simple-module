@@ -86,6 +86,10 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         $interface = $this->getInterfaceClassName();
         $model = $this->parseModelNamespaceAndClass($this->option("model"));
 
+        if (! class_exists($model) && $this->confirm("A {$model} model does not exist. Do you want to generate it?", true)) {
+            $this->call('make:model', ['name' => $model]);
+        }
+
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class,

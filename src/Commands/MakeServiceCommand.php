@@ -64,6 +64,10 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
         $repository = $this->getConvertedClass();
         $namespacedRepository = $this->parseNamespaceAndClass($repository);    
 
+        if (! class_exists($repository) && $this->confirm("A {$repository} repository does not exist. Do you want to generate it?", true)) {
+            $this->call('make:repository', ['name' => $repository]);
+        }
+
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class,

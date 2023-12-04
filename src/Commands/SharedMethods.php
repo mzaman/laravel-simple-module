@@ -178,7 +178,7 @@ trait SharedMethods
                 $file,
                 $this->stubPath
             );
-            
+
             $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
             $path = $this->getPath($namespacedClass);
             $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
@@ -659,6 +659,46 @@ trait SharedMethods
         return $this->parseNamespaceAndClass($model);
     }
 
+    /**
+     * Get the fully-qualified model class name.
+     *
+     * @param  string  $model
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function parseModel($model)
+    {
+        if (preg_match('([^A-Za-z0-9_/\\\\])', $model)) {
+            throw new InvalidArgumentException('Model name contains invalid characters.');
+        }
+
+        return $this->qualifyModel($model);
+    }
+
+    /**
+     * Qualify the given model class base name.
+     *
+     * @param  string  $model
+     * @return string
+     */
+    protected function qualifyModel(string $model)
+    {
+        $model = ltrim($model, '\\/');
+
+        $model = str_replace('/', '\\', $model);
+
+        $laravelNamespace = $this->laravelNamespace();
+
+        if (Str::startsWith($model, $laravelNamespace)) {
+            return $model;
+        }
+
+        return is_dir(app_path('Models'))
+                    ? $laravelNamespace.'Models\\'.$model
+                    : $laravelNamespace.$model;
+    }
+    
     /**
      * Build a name corresponding to the given class.
      *
