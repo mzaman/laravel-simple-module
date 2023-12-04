@@ -85,12 +85,29 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
 
         // If Models are selected, ask for model names (comma-separated)
         if (in_array('Models', $this->parts)) {
-            $modelNames = $this->ask('Enter model names (comma-separated)');
-            $modelNames = array_map(function($modelName) {
-                return $this->toPascal($modelName);
-            }, explode(',', $modelNames));
-            $models = $modelNames;
+            do {
+                // Ask for model names
+                $modelNames = $this->ask('Enter model names (comma-separated)');
+                
+                // Convert to Pascal case and filter out empty and duplicate names
+                $models = array_values(array_unique(array_filter(array_map(function ($modelName) {
+                    return $this->toPascal($modelName);
+                }, explode(',', $modelNames)))));
+                
+                // Check if at least one model is provided
+                if (empty($models)) {
+                    $this->error('At least one valid model name is needed. Please try again.');
+                }
+            } while (empty($models)); // Continue prompting until a valid input is provided
         }
+
+        // if (in_array('Models', $this->parts)) {
+        //     $modelNames = $this->ask('Enter model names (comma-separated)');
+        //     $modelNames = array_map(function($modelName) {
+        //         return $this->toPascal($modelName);
+        //     }, explode(',', $modelNames));
+        //     $models = $modelNames;
+        // }
 
         $this->models = $models;
 
@@ -129,7 +146,8 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         $this->bar = $this->output->createProgressBar($progress);
 
         $this->bar->start();
-
+        // dd($this->features, $this->parts, $this->models, $seederModels, $factoryModels, $policyModels, $controllerModels, $serviceModels, $serviceModels
+        // );
         $this->makeModels();
         $this->makeSeeders($seederModels);
         $this->makeFactories($factoryModels);
@@ -340,6 +358,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
             // $this->info('Creating ' . implode(', ', $this->models) . ' models...');
 
             foreach ($this->models as $model) {
+            
                 Artisan::call('make:model', ['name' => $this->getModelNamespace() . "\\$model"]); 
                 $this->bar->advance();
             }

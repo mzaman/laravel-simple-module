@@ -171,23 +171,21 @@ trait SharedMethods
 
         $namespacedClass = $namespace . "\\" . $class;
 
-        if($this->isAvailable()) {
+        if($this->isAvailable($namespacedClass)) {
 
             new CreateFile(
                 $stubProperties,
                 $file,
                 $this->stubPath
             );
-
-            // $this->line("<info>Created {$class} {$this->toLowerSingular($this->type) }:</info> {$namespacedClass}");
-
+            
             $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
             $path = $this->getPath($namespacedClass);
             $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
 
             return $namespacedClass;
 
-        } else {
+        } else { 
             $this->handleAvailability($namespacedClass);
         }
 
@@ -212,15 +210,11 @@ trait SharedMethods
 
         foreach ($modelTraits as $traitType) { 
             $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
-            $exists = $this->isAvailable($traitClass, 'Trait');
-            if (!$this->isAvailable($traitClass, 'Trait')) {
-                $this->components->error("Model Trait {$class}{$traitType} [". $traitClass . "] already exists.");
-            } else {
-                $this->call('make:trait', [
-                    'name' => $traitClass,
-                    '--force' => $this->isAvailable($traitClass)
-                ]);
-            }
+
+            $this->call('make:trait', [
+                'name' => $traitClass,
+                '--force' => $this->isAvailable($traitClass)
+            ]);
         }
     } 
     
@@ -232,8 +226,7 @@ trait SharedMethods
      */
     protected function qualifyOptionCreate($type, $model = null) {
         $type = $this->toLowerSingular($type);
-        $name = $this->qualifyOption($type);
-        // dd($type, $name);
+        $name = $this->qualifyOption($type); 
         if($name) {
             $this->call("make:{$type}", array_filter([
                 "name" => $name,
@@ -335,7 +328,11 @@ trait SharedMethods
 
             if ($this->confirm('Do you wish to replace...?', false)) {
                 $this->input->setOption('force', true);
-                parent::handle();
+                if($type == 'Model' || $type == 'Controller') {
+                    parent::handle();
+                } else {
+                    $this->handle();
+                }
 
             }
         }
@@ -354,11 +351,11 @@ trait SharedMethods
     protected function isAvailable($class = null, $type = null)
     {
         $type = $type ?: $this->type;
+        $class = $this->getQualifiedClass($class, $type);
         $exists = $this->exists($class, $type);
         $isAvailable = (! $this->hasOption('force') ||
              ! $this->option('force')) && $exists ? false : true; 
-
-        return $isAvailable ? $exists : $isAvailable;
+        return $isAvailable ? $class : $isAvailable;
     }
 
     /**
@@ -635,6 +632,21 @@ trait SharedMethods
         return $this->parseModelNamespaceAndClass()['namespace'];
     }
 
+    /**
+     * Get the model class name with the path.
+     *
+     * @return string
+     */
+    protected function getModelName()
+    {
+        if ($this->option('model')) {
+            return $this->option('model');
+            // return str_replace(['App\\', 'Model\\'], ['', ''], $this->option('model'));
+        }
+
+        return $this->getBaseClassName();
+    } 
+    
     /**
      * Parse the model namespace and class from a namespaced class.
      *

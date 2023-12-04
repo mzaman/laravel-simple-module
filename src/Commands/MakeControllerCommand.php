@@ -376,18 +376,18 @@ class MakeControllerCommand extends ControllerMakeCommand
     //     // return preg_replace('/Controller$/', '', $this->argument('name'));
     // }
 
-    /**
-     * Get the model class name with the path.
-     *
-     * @return string
-     */
-    protected function getModelName()
-    {
-        if ($this->option('model')) {
-            return $this->option('model');
-            // return str_replace(['App\\', 'Model\\'], ['', ''], $this->option('model'));
-        }
+    // /**
+    //  * Get the model class name with the path.
+    //  *
+    //  * @return string
+    //  */
+    // protected function getModelName()
+    // {
+    //     if ($this->option('model')) {
+    //         return $this->option('model');
+    //         // return str_replace(['App\\', 'Model\\'], ['', ''], $this->option('model'));
+    //     }
 
-        return $this->getBaseClassName();
-    } 
+    //     return $this->getBaseClassName();
+    // } 
 }
