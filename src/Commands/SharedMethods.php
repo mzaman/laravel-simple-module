@@ -199,11 +199,15 @@ trait SharedMethods
      */
     protected function createModelTraits()
     {
+
         $model = $this->parseModelNamespaceAndClass($this->option("path"));
         $namespace = $model['namespace'];
         $class = $model['class'];
+        
+        if($this->type !== 'Model') {
+            $class = $this->removeLast($class, [$this->type]);
+        }
 
-        $class = $this->removeLast($class, [$this->type]);
         // $classBaseName = $this->getClassBaseName();
         // Create model traits
         $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
@@ -230,7 +234,7 @@ trait SharedMethods
         if($name) {
             $this->call("make:{$type}", array_filter([
                 "name" => $name,
-                '--model' => $model ? $this->qualifyOption($model, 'Model') : null,
+                '--model' => $model ? $this->qualifyOption($model) : null,
                 "--force" => $this->isAvailable($name, $type)
             ]));
         }
@@ -269,6 +273,7 @@ trait SharedMethods
         }
 
         $class = $this->getClassBaseName();
+        $class = $this->removeLast($class, ['Repository', 'Service']);
         // $class = class_basename($this->getModelClass());
         $normalizedType = $this->toPascalSingular($type ?: $name);
         $namespace = $this->getQualifiedNamespace($normalizedType);
@@ -646,7 +651,7 @@ trait SharedMethods
 
         return $this->getBaseClassName();
     } 
-    
+
     /**
      * Parse the model namespace and class from a namespaced class.
      *
@@ -654,8 +659,9 @@ trait SharedMethods
      *
      * @return array Associative array with 'namespace' and 'class' keys.
      */
-    public function parseModelNamespaceAndClass($model = null) {
+    protected function parseModelNamespaceAndClass($model = null) {
         $model = $model ?: $this->getNamespacedModel();
+        $model = $this->removeLast($model, [$this->type !== 'Model' ? $this->type : null, 'Api', 'Backend', 'Frontend', 'Service', 'Repository']);
         return $this->parseNamespaceAndClass($model);
     }
 
@@ -698,7 +704,7 @@ trait SharedMethods
                     ? $laravelNamespace.'Models\\'.$model
                     : $laravelNamespace.$model;
     }
-    
+
     /**
      * Build a name corresponding to the given class.
      *

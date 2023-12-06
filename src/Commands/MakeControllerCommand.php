@@ -78,6 +78,11 @@ class MakeControllerCommand extends ControllerMakeCommand
         if (! $this->option('invokable')) {
             $hasResource = $this->option('parent') || $this->option('model') || $this->option('resource');
 
+            if ($this->qualifyOption('service')) {
+                $replace = $this->buildServiceReplacements($replace);
+            }
+
+
             if ($hasResource && $this->option('views') && ! $this->option('api')) {
                 $replace = $this->buildViewsReplacements($replace);
             }
@@ -103,8 +108,13 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $modelClass = $this->parseModel($this->option('model'));
 
+        // $modelClass = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
+
         if (! class_exists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
-            $this->call('make:model', ['name' => $modelClass]);
+            $this->call('make:model', [
+                'name' => $modelClass,
+                '--path' => $modelClass
+            ]);
         }
 
         $replace = $this->buildFormRequestReplacements($replace, $modelClass);
@@ -119,6 +129,61 @@ class MakeControllerCommand extends ControllerMakeCommand
             'DummyModelVariable' => lcfirst(class_basename($modelClass)),
             '{{ modelVariable }}' => lcfirst(class_basename($modelClass)),
             '{{modelVariable}}' => lcfirst(class_basename($modelClass)),
+        ]);
+    }
+
+    /**
+     * Build the service replacement values.
+     *
+     * @param  array  $replace
+     * @return array
+     */
+    protected function buildServiceReplacements(array $replace)
+    {
+        $serviceClass = $this->parseModel($this->qualifyOption('service'));
+
+        $serviceClass = $this->generateService($serviceClass);
+
+        // dd($class);
+        return array_merge($replace, [
+            'DummyFullServiceClass' => $serviceClass,
+            '{{ namespacedService }}' => $serviceClass,
+            '{{namespacedService}}' => $serviceClass,
+            'DummyServiceClass' => class_basename($serviceClass),
+            '{{ service }}' => class_basename($serviceClass),
+            '{{service}}' => class_basename($serviceClass),
+            'DummyServiceVariable' => lcfirst(class_basename($serviceClass)),
+            '{{ serviceVariable }}' => lcfirst(class_basename($serviceClass)),
+            '{{serviceVariable}}' => lcfirst(class_basename($serviceClass)),
+        ]);
+    }
+
+    /**
+     * Generate the service class for the given model.
+     *
+     * @param  string  $modelClass
+     * @return string
+     */
+    protected function generateService($modelClass)
+    {
+        $serviceNamespace = $this->getQualifiedNamespace('Services');
+        $serviceClass = class_basename($modelClass);
+        $this->createService("{$serviceNamespace}\\{$serviceClass}");
+
+        return $serviceClass;
+    }
+
+    /**
+     * Create a service class file.
+     *
+     * @param  string  $serviceClass
+     * @return void
+     */
+    protected function createService($serviceClass)
+    {
+        $this->call('make:service', [
+            'name' => $serviceClass,
+            "--model" => $this->option("model")
         ]);
     }
 
@@ -255,14 +320,13 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createPolicy()
     {
 
-        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
+        $model = $this->getQualifiedClass($this->getModelName()/*, 'Model'*/);
         $policy = $this->option('policy');
         $namespace = $this->getQualifiedNamespace('Policy');
         if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
             return;
         }
 
-        $model = $this->getQualifiedClass($this->getModelName(), 'Model');
         $policyName = Str::studly(class_basename($model)) . 'Policy';
         $this->call('make:policy', [
             'name' => "{$namespace}\\{$policyName}",
@@ -279,8 +343,10 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $requests = ['Store', 'Edit', 'Delete', 'Update'];
         $namespace = $this->getQualifiedNamespace('Request');
+        
+        $model = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
 
-        $model = Str::studly($this->getModelClass()); 
+        // $model = Str::studly($this->getModelClass()); 
 
         foreach ($requests as $request) {
             $requestName =  $request . $model . "Request";
@@ -334,6 +400,10 @@ class MakeControllerCommand extends ControllerMakeCommand
         if (! is_null($stub) && ! $this->option('invokable')) {
             $hasResource = $this->option('parent') || $this->option('model') || $this->option('resource');
 
+            if ($this->option('model') && $this->qualifyOption('service')) {
+                $stub = str_replace('.stub', '.service.stub', $stub);
+            }
+
             if ($this->option('model') && $this->option('policy')) {
                 $stub = str_replace('.stub', '.policy.stub', $stub);
             }
@@ -357,9 +427,16 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $options = [
             ['path', 'D', InputOption::VALUE_OPTIONAL, 'Where the controller should be created if specified'],
+
             ['policy', 'P', InputOption::VALUE_OPTIONAL, 'Create a new policy', false],
+
             ['requests', 'R', InputOption::VALUE_NONE, 'Create new request classes'],
+
             ['views', null, InputOption::VALUE_NONE, 'Create new view files if the controller is not for the API'],
+
+            ['repository', 'rt', InputOption::VALUE_OPTIONAL, 'Create a new repository file for the model', false],
+
+            ['service', 'sr', InputOption::VALUE_OPTIONAL, 'Create a new service file for the model', false],
         ];
 
         return array_merge(parent::getOptions(), $options);

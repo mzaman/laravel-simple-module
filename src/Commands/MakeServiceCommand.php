@@ -21,6 +21,7 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
                         {--repository : Create a repository along with the service}?
                         {--api : Create a service with the api template}?
                         {--path= : Where the service should be created}?
+                        {--model= : The model class for the repository}
                         {--force : Create the class even if the service already exists}';
 
     public $description = 'Create a new service class';
@@ -62,10 +63,10 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
         $interface = $this->getInterfaceClassName();
 
         $repository = $this->getConvertedClass();
-        $namespacedRepository = $this->parseNamespaceAndClass($repository);    
-
+        $namespacedRepository = $this->parseNamespaceAndClass($repository); 
+        
         if (! class_exists($repository) && $this->confirm("A {$repository} repository does not exist. Do you want to generate it?", true)) {
-            $this->call('make:repository', ['name' => $repository]);
+            $this->createRepository();
         }
 
         $stubProperties = [
@@ -117,9 +118,9 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
     private function createRepository()
     {
         $name = $this->getConvertedClass();
-
         $this->call("make:repository", [
             "name" => $name,
+            "--model" => $this->option("model")
         ]);
     }
 }
