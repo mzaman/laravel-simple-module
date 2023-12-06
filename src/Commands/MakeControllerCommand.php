@@ -20,6 +20,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     public function handle()
     {
+
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
@@ -69,14 +70,14 @@ class MakeControllerCommand extends ControllerMakeCommand
             $replace = $this->buildParentReplacements();
         }
 
-        if ($this->option('model')) {
+        if ($this->qualifyOption('model')) {
             $replace = $this->buildModelReplacements($replace);
         }
 
         $replace = $this->buildRequestsReplacements($replace);
 
         if (! $this->option('invokable')) {
-            $hasResource = $this->option('parent') || $this->option('model') || $this->option('resource');
+            $hasResource = $this->option('parent') || $this->qualifyOption('model') || $this->option('resource');
 
             if ($this->qualifyOption('service')) {
                 $replace = $this->buildServiceReplacements($replace);
@@ -106,9 +107,9 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildModelReplacements(array $replace)
     {
-        $modelClass = $this->parseModel($this->option('model'));
+        $modelClass = $this->parseModel($this->qualifyOption('model'));
 
-        // $modelClass = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
+        // $modelClass = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
 
         if (! class_exists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
             $this->call('make:model', [
@@ -144,7 +145,6 @@ class MakeControllerCommand extends ControllerMakeCommand
 
         $serviceClass = $this->generateService($serviceClass);
 
-        // dd($class);
         return array_merge($replace, [
             'DummyFullServiceClass' => $serviceClass,
             '{{ namespacedService }}' => $serviceClass,
@@ -267,7 +267,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildRequestsReplacements(array $replace)
     {
-        $modelClass = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
+        $modelClass = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
         // $controller = Str::studly($this->getBaseClassName());
 
         $requestNamespace = $this->getQualifiedNamespace('Request');
@@ -344,7 +344,7 @@ class MakeControllerCommand extends ControllerMakeCommand
         $requests = ['Store', 'Edit', 'Delete', 'Update'];
         $namespace = $this->getQualifiedNamespace('Request');
         
-        $model = class_basename($this->option('model') ? $this->parseModel($this->option('model')) : $this->getModelClass());
+        $model = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
 
         // $model = Str::studly($this->getModelClass()); 
 
@@ -383,7 +383,7 @@ class MakeControllerCommand extends ControllerMakeCommand
 
         if ($this->option('parent')) {
             $stub = '/stubs/controller.nested.stub';
-        } elseif ($this->option('model')) {
+        } elseif ($this->qualifyOption('model')) {
             $stub = '/stubs/controller.model.stub';
         } elseif ($this->option('invokable')) {
             $stub = '/stubs/controller.invokable.stub';
@@ -398,13 +398,13 @@ class MakeControllerCommand extends ControllerMakeCommand
         }
 
         if (! is_null($stub) && ! $this->option('invokable')) {
-            $hasResource = $this->option('parent') || $this->option('model') || $this->option('resource');
+            $hasResource = $this->option('parent') || $this->qualifyOption('model') || $this->option('resource');
 
-            if ($this->option('model') && $this->qualifyOption('service')) {
+            if (/*$this->qualifyOption('model') && */$this->qualifyOption('service')) {
                 $stub = str_replace('.stub', '.service.stub', $stub);
             }
 
-            if ($this->option('model') && $this->option('policy')) {
+            if ($this->qualifyOption('model') && $this->qualifyOption('policy')) {
                 $stub = str_replace('.stub', '.policy.stub', $stub);
             }
 
@@ -425,21 +425,27 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function getOptions()
     {
+
         $options = [
+
+            ['model', 'm', InputOption::VALUE_OPTIONAL, 'Generate a resource controller for the given model', false],
+
+            ['parent', 'p', InputOption::VALUE_OPTIONAL, 'Generate a nested resource controller class', false],
+
             ['path', 'D', InputOption::VALUE_OPTIONAL, 'Where the controller should be created if specified'],
 
             ['policy', 'P', InputOption::VALUE_OPTIONAL, 'Create a new policy', false],
 
             ['requests', 'R', InputOption::VALUE_NONE, 'Create new request classes'],
 
-            ['views', null, InputOption::VALUE_NONE, 'Create new view files if the controller is not for the API'],
+            ['views', null, InputOption::VALUE_OPTIONAL, 'Create new view files if the controller is not for the API', false],
 
             ['repository', 'rt', InputOption::VALUE_OPTIONAL, 'Create a new repository file for the model', false],
 
             ['service', 'sr', InputOption::VALUE_OPTIONAL, 'Create a new service file for the model', false],
         ];
 
-        return array_merge(parent::getOptions(), $options);
+        return $this->mergeOptions(parent::getOptions(), $options);
     }
 
     // /**
@@ -460,9 +466,9 @@ class MakeControllerCommand extends ControllerMakeCommand
     //  */
     // protected function getModelName()
     // {
-    //     if ($this->option('model')) {
-    //         return $this->option('model');
-    //         // return str_replace(['App\\', 'Model\\'], ['', ''], $this->option('model'));
+    //     if ($this->qualifyOption('model')) {
+    //         return $this->qualifyOption('model');
+    //         // return str_replace(['App\\', 'Model\\'], ['', ''], $this->qualifyOption('model'));
     //     }
 
     //     return $this->getBaseClassName();

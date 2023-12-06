@@ -203,7 +203,7 @@ trait SharedMethods
         $model = $this->parseModelNamespaceAndClass($this->option("path"));
         $namespace = $model['namespace'];
         $class = $model['class'];
-        
+
         if($this->type !== 'Model') {
             $class = $this->removeLast($class, [$this->type]);
         }
@@ -257,7 +257,7 @@ trait SharedMethods
     }
 
     /**
-     * Get the qualified option based on $this->type.
+     * Get the qualified option.
      *
      * @param string $name
      * @param string|null $type The target type for conversion (e.g., 'Model', 'Service', etc.).
@@ -278,16 +278,22 @@ trait SharedMethods
         $normalizedType = $this->toPascalSingular($type ?: $name);
         $namespace = $this->getQualifiedNamespace($normalizedType);
         $suffix = $this->getSuffix($normalizedType);
+        $class .= $suffix;
 
+        if ($normalizedType == 'Model') {
+            $class = $this->removeLast($class, ['Api', 'Backend', 'Frontend', 'Model']);
+        }
+        
         // When option is expected, but name is not provided
         if(is_null($option)) {
-            return "{$namespace}\\{$class}{$suffix}";
+            $option = "{$namespace}\\{$class}";
         }
 
         // When option is expected, but name is provided
         if(is_string($option)) {
-            return $this->getQualifiedClass($option, $normalizedType);
+            $option = $this->getQualifiedClass($option, $normalizedType);
         }
+
 
         return $option;
 
@@ -328,8 +334,10 @@ trait SharedMethods
         $type = $type ?: $this->type;
         $isAvailable = $this->isAvailable($class, $type);
         $class = $this->getQualifiedClass($class, $type);
+        $className = class_basename($class);
+        
         if (!$isAvailable) {
-            $this->components->error("<fg=yellow>{$type}</> [{$class}] <fg=yellow>already exists.</>");
+            $this->components->error("<fg=yellow>{$type}</> <fg=green>{$className} [{$class}] <fg=yellow>already exists.</>");
 
             if ($this->confirm('Do you wish to replace...?', false)) {
                 $this->input->setOption('force', true);
@@ -341,7 +349,6 @@ trait SharedMethods
 
             }
         }
-
 
         return true;
     }
@@ -1398,4 +1405,24 @@ trait SharedMethods
         return str_replace('\\', '/', $namespace);
     }
 
+    /**
+     * Merge two arrays of options, removing any duplicates from the second array.
+     *
+     * @param  array  $options1
+     * @param  array  $options2
+     * @return array
+     */
+    protected function mergeOptions($options1, $options2)
+    {
+        // Extract keys to remove from the second array
+        $keysToRemove = array_column($options2, 0);
+
+        // Filter options from the first array based on keys to remove
+        $mergedOptions = array_filter($options1, function ($option) use ($keysToRemove) {
+            return !in_array($option[0], $keysToRemove);
+        });
+
+        // Combine filtered options with the second array
+        return array_merge($mergedOptions, $options2);
+    }
 }

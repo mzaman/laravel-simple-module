@@ -105,7 +105,7 @@ class MakeModelCommand extends ModelMakeCommand
             ['service', 'sr', InputOption::VALUE_OPTIONAL, 'Create a new service file for the model', false],
         ];
 
-        $mergedOptions = array_merge(parent::getOptions(), $options);
-        return $mergedOptions;
+        return $this->mergeOptions(parent::getOptions(), $options);
+        
     }
 }
