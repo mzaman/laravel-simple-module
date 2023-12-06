@@ -2,22 +2,29 @@
 
 namespace DummyNamespace;
 
+use DummyFullServiceClass;
 use DummyFullModelClass;
 use DummyRootNamespaceHttp\Controllers\Controller;
 use DummyFullStoreRequestClass;
 use DummyFullUpdateRequestClass;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
 
 class DummyClass extends Controller
 {
+    protected $service;
+
     /**
      * Instantiate a new DummyClass controller instance.
      *
+     * @param DummyFullServiceClass $service
      * @return void
      */
-    public function __construct()
+    public function __construct(DummyFullServiceClass $service)
     {
+        // Inject the service dependency into the controller
         $this->authorizeResource(DummyModelClass::class, 'DummyModelVariable');
+        $this->service = $service;
     }
 
     /**
@@ -27,7 +34,8 @@ class DummyClass extends Controller
      */
     public function index()
     {
-        //
+        // Retrieve and return all resources
+        return $this->service->all();
     }
 
     /**
@@ -48,7 +56,21 @@ class DummyClass extends Controller
      */
     public function store(DummyStoreRequestClass $request)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+        // Extract data from the request
+        $data = $request->only([
+            // Add your input names here
+        ]);
+
+        // Create a new resource
+        return $this->service->create($data);
     }
 
     /**
@@ -59,7 +81,11 @@ class DummyClass extends Controller
      */
     public function show(DummyModelClass $DummyModelVariable)
     {
-        //
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Retrieve and return a specific resource
+        return $this->service->find($id);
     }
 
     /**
@@ -82,7 +108,25 @@ class DummyClass extends Controller
      */
     public function update(DummyUpdateRequestClass $request, DummyModelClass $DummyModelVariable)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+
+        // Extract data from the request
+        $data = $request->only([
+            // Add your input names here
+        ]);
+        
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Update the resource
+        return $this->service->update($id, $data);
     }
 
     /**
@@ -93,6 +137,18 @@ class DummyClass extends Controller
      */
     public function destroy(DummyModelClass $DummyModelVariable)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+        
+        // Delete the resource
+        return $this->service->delete($id);
     }
 }

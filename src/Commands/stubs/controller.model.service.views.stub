@@ -2,6 +2,7 @@
 
 namespace DummyNamespace;
 
+use DummyFullServiceClass;
 use DummyFullModelClass;
 use DummyFullStoreRequestClass;
 use DummyFullUpdateRequestClass;
@@ -10,6 +11,20 @@ use Illuminate\Http\Response;
 
 class DummyClass extends Controller
 {
+    protected $service;
+
+    /**
+     * Instantiate a new DummyClass controller instance.
+     *
+     * @param DummyFullServiceClass $service
+     * @return void
+     */
+    public function __construct(DummyFullServiceClass $service)
+    {
+        // Inject the service dependency into the controller
+        $this->service = $service;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -17,9 +32,9 @@ class DummyClass extends Controller
      */
     public function index()
     {
-        return view('DummyViewPath.index', [
-            //
-        ]);
+        // Retrieve and return all resources
+        $data = $this->service->all();
+        return view('DummyViewPath.index', $data);
     }
 
     /**
@@ -40,7 +55,23 @@ class DummyClass extends Controller
      */
     public function store(DummyStoreRequestClass $request)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+        // Extract data from the request
+        $data = $request->only([
+            // Add your input names here
+        ]);
+
+        // Create a new resource
+        $result = $this->service->create($data);
+
+        return view('DummyViewPath.index', $result);
     }
 
     /**
@@ -51,6 +82,12 @@ class DummyClass extends Controller
      */
     public function show(DummyModelClass $DummyModelVariable)
     {
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Retrieve and return a specific resource
+        $DummyModelVariable = $this->service->find($id);
+
         return view('DummyViewPath.show', [
             'DummyModelVariable' => $DummyModelVariable,
         ]);
@@ -64,6 +101,12 @@ class DummyClass extends Controller
      */
     public function edit(DummyModelClass $DummyModelVariable)
     {
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Retrieve and return a specific resource
+        $DummyModelVariable = $this->service->find($id);
+
         return view('DummyViewPath.edit', [
             'DummyModelVariable' => $DummyModelVariable,
         ]);
@@ -78,7 +121,31 @@ class DummyClass extends Controller
      */
     public function update(DummyUpdateRequestClass $request, DummyModelClass $DummyModelVariable)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+
+        // Extract data from the request
+        $data = $request->only([
+            // Add your input names here
+        ]);
+        
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Update the resource
+        $result = $this->service->update($id, $data);
+
+        $DummyModelVariable = $this->service->find($id);
+
+        return view('DummyViewPath.edit', [
+            'DummyModelVariable' => $DummyModelVariable,
+        ]);
     }
 
     /**
@@ -89,6 +156,20 @@ class DummyClass extends Controller
      */
     public function destroy(DummyModelClass $DummyModelVariable)
     {
-        //
+        // Add validation rules
+        $rules = [
+            // Add your validation rules here
+        ];
+
+        // Validate the request
+        $request->validate($rules);
+
+        // Retrieve the resource ID
+        $id = $DummyModelVariable->id;
+
+        // Delete the resource
+        $result = $this->service->delete($id);
+
+        return view('DummyViewPath.index', $result);
     }
 }

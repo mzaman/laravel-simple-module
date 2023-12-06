@@ -20,7 +20,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     public function handle()
     {
-
+        
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
@@ -438,7 +438,7 @@ class MakeControllerCommand extends ControllerMakeCommand
 
             ['requests', 'R', InputOption::VALUE_NONE, 'Create new request classes'],
 
-            ['views', null, InputOption::VALUE_OPTIONAL, 'Create new view files if the controller is not for the API', false],
+            ['views', null, InputOption::VALUE_NONE, 'Create new view files if the controller is not for the API'],
 
             ['repository', 'rt', InputOption::VALUE_OPTIONAL, 'Create a new repository file for the model', false],
 

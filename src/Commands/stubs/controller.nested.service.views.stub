@@ -2,15 +2,30 @@
 
 namespace DummyNamespace;
 
+use DummyFullServiceClass;
 use DummyFullModelClass;
 use ParentDummyFullModelClass;
 use DummyRootNamespaceHttp\Controllers\Controller;
 use DummyFullStoreRequestClass;
 use DummyFullUpdateRequestClass;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
 
 class DummyClass extends Controller
 {
+    protected $service;
+
+    /**
+     * Instantiate a new DummyClass constructor.
+     *
+     * @param DummyFullServiceClass $service
+     */
+    public function __construct(DummyFullServiceClass $service)
+    {
+        // Inject the service dependency into the controller
+        $this->service = $service;
+    }
+
     /**
      * Display a listing of the resource.
      *
