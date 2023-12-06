@@ -31,7 +31,7 @@ trait SharedMethods
     * @return array
     *
     */
-    public function getChoices()
+    protected function getChoices()
     {
         $name = $this->getQualifedNameInput();
         $path = $this->option('path');
@@ -75,7 +75,7 @@ trait SharedMethods
         ];
     }
 
-    public function hasNamespace($class) {
+    protected function hasNamespace($class) {
         // If class parameter contains namespace
         preg_match('/(.*)\\\\([a-zA-Z_][a-zA-Z0-9_\\\\]+)$/', $class, $matches);
         if ($matches) {
@@ -93,7 +93,7 @@ trait SharedMethods
      * @param $name
      * @return string
      */
-    public function getSingularClassName($name)
+    protected function getSingularClassName($name)
     {
         return ucwords(Pluralizer::singular($name));
     }
@@ -141,7 +141,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function createTrait($suffix = null)
+    protected function createTrait($suffix = null)
     {
         $namespace = $this->getNamespace();
         $class = $this->getClassName();
@@ -395,7 +395,7 @@ trait SharedMethods
      *
      * @return void
      */
-    public function createInterface($type = null)
+    protected function createInterface($type = null)
     {
         $type = $type ?: $this->type;
         $class = $this->getClassName($type);
@@ -711,7 +711,7 @@ trait SharedMethods
      * @param string|null $class
      * @return string|null
      */
-    public function buildClassName($class = null, array $suffixes= [])
+    protected function buildClassName($class = null, array $suffixes= [])
     {
         $class = $class ?: $this->getNamespacedClass();
   
@@ -745,7 +745,7 @@ trait SharedMethods
      * @param string|null $class
      * @return string|null
      */
-    public function getNamespacedModel($class = null)
+    protected function getNamespacedModel($class = null)
     {
         $class = $class ?: $this->getNamespacedClass();
         // Get the root namespace based on the position of the type of class directory
@@ -803,7 +803,7 @@ trait SharedMethods
      * @param string|null $class
      * @return string|null
      */
-    public function getNamespacedRepositoryOrService($class = null)
+    protected function getNamespacedRepositoryOrService($class = null)
     {
         $class = $class ?: $this->getNamespacedClass();
         // Get the root namespace based on the position of the type of class directory
@@ -853,7 +853,7 @@ trait SharedMethods
      * @param string|null $from The source type for conversion (e.g., 'Model', 'Service', etc.).
      * @return string The converted namespace.
      */
-    public function getConvertedClass($to = null, $from = null, $namespace = null)
+    protected function getConvertedClass($to = null, $from = null, $namespace = null)
     {
         // Set default values if not provided
         $from = $from ?: $this->type;
@@ -919,7 +919,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getSuffix($type = null) {
+    protected function getSuffix($type = null) {
         $type = $type ?: $this->type;
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_suffix';
@@ -933,7 +933,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getInterfaceSuffix($type = null) {
+    protected function getInterfaceSuffix($type = null) {
         $type = $type ?: $this->type;
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_interface_suffix';
@@ -947,7 +947,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getDefautlClass($type = null) {
+    protected function getDefautlClass($type = null) {
         $type = $type ?: $this->type;
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_class';
@@ -961,7 +961,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getDefautlNamespace($type = null) {
+    protected function getDefautlNamespace($type = null) {
         $type = $type ?: $this->type;
         $normalizedNamespace = $this->laravelNamespace() . ($this->isHttpType() ? 'Http\\' : null) . $this->toPascalPlural($type);
 
@@ -991,7 +991,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getDefautPath($type = null) {
+    protected function getDefautPath($type = null) {
         $type = $type ?: $this->type;
         $normalizedPath = $this->laravelPath() . ($this->isHttpType() ? DIRECTORY_SEPARATOR . 'Http' . DIRECTORY_SEPARATOR : DIRECTORY_SEPARATOR) . $this->toPascalPlural($type);
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_directory';
@@ -1081,7 +1081,7 @@ trait SharedMethods
      *
      * @return array Associative array with 'namespace' and 'class' keys.
      */
-    public function parseNamespaceAndClass($name, $type = null) {
+    protected function parseNamespaceAndClass($name, $type = null) {
         // Case 1: Name parameter contains namespace
         $hasNamespace = $this->hasNamespace($name); 
         if ($hasNamespace) {
@@ -1183,7 +1183,7 @@ trait SharedMethods
      * @param array|int $needles
      * @return string
      */
-    public function namespaceSlice(string $namespace, $needles)
+    protected function namespaceSlice(string $namespace, $needles)
     {
         $namespace = $this->getNamespaceFromPath($namespace);
         // Extract the segments from the namespace
@@ -1221,7 +1221,7 @@ trait SharedMethods
      * @param string|null $type
      * @return string
      */
-    public function getClassBaseName($type = null)
+    protected function getClassBaseName($type = null)
     {
         $suffix = $this->getSuffix($type ?: $this->type);
         $class = $this->getClass();
@@ -1259,7 +1259,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getClassPath()
+    protected function getClassPath()
     {
         return $this->getChoices()['path'];
     }
@@ -1314,7 +1314,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function toPascalPlural($name)
+    protected function toPascalPlural($name)
     {
         return Str::studly(Pluralizer::plural(Str::lower($name)));
     }
@@ -1325,7 +1325,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function toLowerSingular($name)
+    protected function toLowerSingular($name)
     {
         return Pluralizer::singular(Str::lower($name));
     }
@@ -1336,7 +1336,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function toPascalSingular($name)
+    protected function toPascalSingular($name)
     {
         return Str::studly(Pluralizer::singular(Str::lower($name)));
     }
@@ -1359,7 +1359,7 @@ trait SharedMethods
      *
      * @return string
      */
-    public function getClass()
+    protected function getClass()
     {
         return $this->getChoices()['class'];
     }
