@@ -20,7 +20,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     public function handle()
     {
-        
+
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
@@ -168,9 +168,10 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $serviceNamespace = $this->getQualifiedNamespace('Services');
         $serviceClass = class_basename($modelClass);
-        $this->createService("{$serviceNamespace}\\{$serviceClass}");
+        $namespacedService = "{$serviceNamespace}\\{$serviceClass}";
+        $this->createService($namespacedService);
 
-        return $serviceClass;
+        return $namespacedService;
     }
 
     /**
