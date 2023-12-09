@@ -1,7 +1,7 @@
 <?php
 
 
-namespace LaravelSimpleModule\helpers;
+namespace LaravelSimpleModule\Helpers;
 
 
 use Illuminate\Filesystem\Filesystem;
