@@ -20,25 +20,30 @@ class Change
         if (is_string($var) || is_numeric($var)) {
             switch ($cast) {
                 case $cast == 'pascal': // if cast type is PascalCase
-                    return Str::studly($var);
+                    $result = Str::studly($var);
                     break;
                 
                 default:
-                    return Str::$cast($var);
+                    $result = Str::$cast($var);
                     break;
             }
         }
 
-        // If $var is an array, then return the processed array
-        if (is_array($var)) {
-            return self::arrayWalkRecursive($var, $cast, $parameter);
+
+        foreach (self::getSeparatedValues($cast) as $castType) {
+
+            // If $var is an array, then return the processed array
+            if (is_array($var)) {
+                $result = self::arrayWalkRecursive($var, $castType, $parameter);
+            }
+
+            // If $var is an object, then return the processed object
+            if (is_object($var)) {
+                $result = (object) self::arrayWalkRecursive((array) $var, $castType, $parameter);
+            }
         }
 
-        // If $var is an object, then return the processed object
-        if (is_array($var)) {
-            return (object) self::arrayWalkRecursive((array) $var, $cast, $parameter);
-        }
-
+        return $result;
     }
 
 
@@ -99,4 +104,17 @@ class Change
         return $result;
     }
 
+    /**
+     * Splits a string containing space and/or comma-separated values into an array.
+     *
+     * @param string $inputString The input string to be split.
+     * @return array The array containing separated values.
+     */
+    private static function getSeparatedValues($inputString)
+    {
+        // Split the input string using both space and comma as delimiters
+        $values = preg_split('/[\s,]+/', $inputString, -1, PREG_SPLIT_NO_EMPTY);
+
+        return $values;
+    }
 }
