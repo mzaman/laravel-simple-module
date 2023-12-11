@@ -5,12 +5,15 @@ namespace LaravelSimpleModule\Commands;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Str;
 use LaravelSimpleModule\CreateFile;
+use LaravelSimpleModule\Helpers\Change;
 
 trait SharedMethods
 {
 
     protected $defaultClassPrefix = 'Default';
     protected $isFresh = true;
+    protected $applicationLayers = ['Api', 'Backend', 'Frontend'];
+    protected $applicationComponents = ['Migration', 'Event', 'Controller', 'Middleware', 'Request', 'Listener', 'Repository', 'Service', 'Policy', 'Factory', 'Seeder', 'View'];
     /**
      * Prompt for missing input arguments using the returned questions.
      *
@@ -200,7 +203,7 @@ trait SharedMethods
     protected function createModelTraits()
     {
 
-        $model = $this->parseModelNamespaceAndClass($this->option("path"));
+        $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
         $namespace = $model['namespace'];
         $class = $model['class'];
 
@@ -315,11 +318,40 @@ trait SharedMethods
         
         if (in_array($commonChoices[0], $selectedChoices)) {
             return $choices;
-        } elseif (in_array($commonChoices[1], $selectedChoices)) {
+        } elseif (isset($commonChoices[1]) && in_array($commonChoices[1], $selectedChoices)) {
             return [];
         } else {
             return $this->removeByValues($selectedChoices, $commonChoices);;
         }
+    }
+
+    /**
+     * Prompt the user for names of a specific type of instance (e.g., model, service, repository, etc.).
+     *
+     * @param string|null $type The type of instance to prompt for.
+     * @return array The names of the instances in Pascal case.
+     */
+    protected function askNames($type = null)
+    {
+        // Use the provided $type or fallback to the default type and format the type name for display.
+        $type = $this->toPascalSingular($type ?: $this->type);
+
+        do {
+            // Ask for instance names
+            $names = $this->ask("Enter {$type} names (comma-separated)");
+
+            // Convert to Pascal case and filter out empty and duplicate names
+            $instances = array_values(array_unique(array_filter(array_map(function ($name) {
+                return $this->toPascal($name);
+            }, explode(',', $names)))));
+
+            // Check if at least one instance is provided
+            if (empty($instances)) {
+                $this->error("At least one valid {$type} name is needed. Please try again.");
+            }
+        } while (empty($instances)); // Continue prompting until a valid input is provided
+
+        return $instances;
     }
 
     /**
@@ -668,7 +700,7 @@ trait SharedMethods
      */
     protected function parseModelNamespaceAndClass($model = null) {
         $model = $model ?: $this->getNamespacedModel();
-        $model = $this->removeLast($model, [$this->type !== 'Model' ? $this->type : null, 'Api', 'Backend', 'Frontend', 'Service', 'Repository']);
+        $model = $this->removeLast($model, [!in_array($this->type, ['Model', 'Module']) ? $this->type : null, '\\Modules', 'Api', 'Backend', 'Frontend', 'Services', 'Repositories']);
         return $this->parseNamespaceAndClass($model);
     }
 

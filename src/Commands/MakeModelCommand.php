@@ -18,7 +18,7 @@ class MakeModelCommand extends ModelMakeCommand
     public function handle()
     {
         $this->createModelTraits();
-
+        sleep(1);
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
