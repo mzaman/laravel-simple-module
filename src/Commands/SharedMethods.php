@@ -202,6 +202,23 @@ trait SharedMethods
      */
     protected function createModelTraits()
     {
+        $commands = $this->getModelTraitCommands();
+
+        foreach ($commands as $key => $command) {
+            $this->call($command[0], $command[1]);
+        }
+
+        return Command::SUCCESS;
+    } 
+
+    /**
+     * get model trait commands
+     *
+     * @param string $toString Parse command in string representaion
+     * @return array
+     */
+    protected function getModelTraitCommands($toString = false)
+    {
 
         $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
         $namespace = $model['namespace'];
@@ -211,20 +228,105 @@ trait SharedMethods
             $class = $this->removeLast($class, [$this->type]);
         }
 
-        // $classBaseName = $this->getClassBaseName();
-        // Create model traits
         $modelTraits = ['Attribute', 'Method', 'Relationship', 'Scope'];
+
+        $commands = [];
 
         foreach ($modelTraits as $traitType) { 
             $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
 
-            $this->call('make:trait', [
+            // Add make trait command with options
+            $commandOptions = array_filter([
                 'name' => $traitClass,
-                '--force' => $this->isAvailable($traitClass)
+                '--force' => $this->isAvailable($traitClass) ? true : false
             ]);
+
+            $command = ['make:trait', $commandOptions];
+
+            if($toString) {
+                $command = $this->toCommandString($command, true);
+            }
+
+            array_push($commands, $command);
         }
+
+        return $commands;
     } 
     
+    /**
+     * Format the given command array into a command string.
+     *
+     * @param array $command An array representing the command and its options.
+     *                       Example: ["make:controller", ["name" => "DummyController", "--model" => "DummyModel"]]
+     *
+     * @param bool $isArtisanCommand Add prefix for artisan command.
+     * 
+     * @return string The formatted command string.
+     */
+    private function toCommandString($command, $isArtisanCommand = false)
+    {
+        // Build the base command string with 'php artisan' and the command name
+        $commandString = $command[0] . ' ';
+
+        // Initialize an array to store formatted options
+        $options = [];
+
+        // Loop through the options in the command array
+        foreach ($command[1] as $option => $value) {
+            // If the option has a boolean value, include only the option without a value
+            if ($value === true) {
+                $options[] = $option;
+            } else {
+                // If the option has a non-boolean value, include both the option and its value
+                $options[] = $option == 'name' ? $value : "$option=$value";
+            }
+        }
+
+        // Concatenate the options and append them to the command string
+        $commandString .= implode(' ', $options);
+
+        if ($isArtisanCommand) {
+            $commandString = PHP_BINARY . ' ' . base_path('artisan') . ' '. $commandString;
+        }
+
+        // Return the formatted command string
+        return $commandString;
+    }
+
+    /**
+     * Convert the output command string to an array representation.
+     *
+     * @param string $output The output command string.
+     *
+     * @return array The array representation of the command.
+     */
+    private function parseCommandString($output)
+    {
+        // Split the command string into parts
+        $parts = explode(' ', $output);
+
+        // Extract the command name (first part)
+        $commandName = array_shift($parts);
+
+        // Initialize an array to store options
+        $options = [];
+
+        // Iterate through the remaining parts to extract options and their values
+        foreach ($parts as $part) {
+            // Split each part into option and value (if applicable)
+            list($option, $value) = explode('=', $part, 2) + [null, null];
+
+            // If no value is provided, assume it's a boolean option
+            $value = ($value === null) ? true : $value;
+
+            // Add the option and its value (if applicable) to the options array
+            $options[$option] = $value;
+        }
+
+        // Return the array representation of the command
+        return [$commandName, $options];
+    }
+
     /**
      * Create the qualified option based on $type.
      *
