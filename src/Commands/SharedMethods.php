@@ -203,28 +203,27 @@ trait SharedMethods
     protected function createModelTraits()
     {
         $commands = $this->getModelTraitCommands();
-
         foreach ($commands as $key => $command) {
-            $this->call($command[0], $command[1]);
+            $this->call($command[2], $command[3]);
         }
 
         return Command::SUCCESS;
     } 
-
+    
     /**
-     * get model trait commands
+     * Get model trait commands.
      *
-     * @param string $toString Parse command in string representaion
-     * @return array
+     * @param bool $toString Parse command in string representation.
+     *
+     * @return array|string[]
      */
     protected function getModelTraitCommands($toString = false)
     {
-
         $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
         $namespace = $model['namespace'];
         $class = $model['class'];
 
-        if($this->type !== 'Model') {
+        if ($this->type !== 'Model') {
             $class = $this->removeLast($class, [$this->type]);
         }
 
@@ -232,18 +231,17 @@ trait SharedMethods
 
         $commands = [];
 
-        foreach ($modelTraits as $traitType) { 
+        foreach ($modelTraits as $traitType) {
             $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
 
-            // Add make trait command with options
             $commandOptions = array_filter([
                 'name' => $traitClass,
-                '--force' => $this->isAvailable($traitClass) ? true : false
+                '--force' => $this->isAvailable($traitClass) ? true : false,
             ]);
 
-            $command = ['make:trait', $commandOptions];
+            $command = $this->addCommandArgument($commandOptions, 'trait');
 
-            if($toString) {
+            if ($toString) {
                 $command = $this->toCommandString($command, true);
             }
 
@@ -251,28 +249,28 @@ trait SharedMethods
         }
 
         return $commands;
-    } 
-    
-    /**
-     * Format the given command array into a command string.
-     *
-     * @param array $command An array representing the command and its options.
-     *                       Example: ["make:controller", ["name" => "DummyController", "--model" => "DummyModel"]]
-     *
-     * @param bool $isArtisanCommand Add prefix for artisan command.
-     * 
-     * @return string The formatted command string.
-     */
-    private function toCommandString($command, $isArtisanCommand = false)
-    {
-        // Build the base command string with 'php artisan' and the command name
-        $commandString = $command[0] . ' ';
+    }
 
+    protected function addCommandArgument($options, $type = null)
+    {
+        $command = $this->getCommand($type);
+        return [PHP_BINARY, base_path('artisan'), $command, $options];
+    }
+
+    /**
+     * Flatten the command arguments to an array.
+     *
+     * @param array $arguments Command arguments.
+     *
+     * @return array Flattened options.
+     */
+    protected function flattenArguments($arguments)
+    {
         // Initialize an array to store formatted options
         $options = [];
 
         // Loop through the options in the command array
-        foreach ($command[1] as $option => $value) {
+        foreach ($arguments[1] as $option => $value) {
             // If the option has a boolean value, include only the option without a value
             if ($value === true) {
                 $options[] = $option;
@@ -282,16 +280,57 @@ trait SharedMethods
             }
         }
 
+        return $options;
+    }
+
+    /**
+     * Get the command name for a specific type of instance (e.g., model, service, repository, etc.).
+     *
+     * @param array|string|null $options The type of instance or command options.
+     *
+     * @return string The command name.
+     */
+    protected function getCommand($options = null)
+    {
+        // If options include a custom command name, use it
+        if (is_array($options) && $options[0] == PHP_BINARY && isset($options[2])) {
+            return $options[2];
+        }
+
+        // Use the provided $type or fallback to the default type and format the type name for display.
+        $type = $this->toLowerSingular($options ?: $this->type);
+
+        return "make:{$type}";
+    }
+
+    /**
+     * Format the given command array into a command string.
+     *
+     * @param array $arguments An array representing the command and its options.
+     *                       Example: ["make:controller", ["name" => "DummyController", "--model" => "DummyModel"]]
+     * @param bool  $isArtisanCommand Add prefix for artisan command.
+     *
+     * @return string The formatted command string.
+     */
+    private function toCommandString($arguments, $isArtisanCommand = false)
+    {
+        // Build the base command string with 'php artisan' and the command name
+        $argumentString = $arguments[0] . ' ';
+
+        // Initialize an array to store formatted options
+        $options = $this->flattenArguments($arguments);
+
         // Concatenate the options and append them to the command string
-        $commandString .= implode(' ', $options);
+        $argumentString .= implode(' ', $options);
 
         if ($isArtisanCommand) {
-            $commandString = PHP_BINARY . ' ' . base_path('artisan') . ' '. $commandString;
+            $argumentString = PHP_BINARY . ' ' . base_path('artisan') . ' ' . $argumentString;
         }
 
         // Return the formatted command string
-        return $commandString;
+        return $argumentString;
     }
+
 
     /**
      * Convert the output command string to an array representation.
@@ -326,6 +365,7 @@ trait SharedMethods
         // Return the array representation of the command
         return [$commandName, $options];
     }
+
 
     /**
      * Create the qualified option based on $type.
