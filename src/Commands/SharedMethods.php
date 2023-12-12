@@ -3,6 +3,7 @@
 namespace LaravelSimpleModule\Commands;
 
 use Illuminate\Support\Pluralizer;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use LaravelSimpleModule\CreateFile;
 use LaravelSimpleModule\Helpers\Change;
@@ -196,6 +197,19 @@ trait SharedMethods
     }
 
     /**
+     * Call Artisan command with given arguments.
+     *
+     * @param string $command Artisan command name.
+     * @param array  $options Command options.
+     *
+     * @return void
+     */
+    protected function callArtisanCommand($command, $options)
+    {
+        $this->call($command, $options);
+    }
+
+    /**
      * Create model traits
      *
      * @return void
@@ -213,11 +227,11 @@ trait SharedMethods
     /**
      * Get model trait commands.
      *
-     * @param bool $toString Parse command in string representation.
+     * @param  bool $isFlatten Parse command as an array representation.
      *
      * @return array|string[]
      */
-    protected function getModelTraitCommands($toString = false)
+    protected function getModelTraitCommands($isFlatten = true)
     {
         $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
         $namespace = $model['namespace'];
@@ -239,11 +253,7 @@ trait SharedMethods
                 '--force' => $this->isAvailable($traitClass) ? true : false,
             ]);
 
-            $command = $this->addCommandArgument($commandOptions, 'trait');
-
-            if ($toString) {
-                $command = $this->toCommandString($command, true);
-            }
+            $command = $this->toProcessCommand($commandOptions, 'trait', $isFlatten);
 
             array_push($commands, $command);
         }
@@ -251,10 +261,29 @@ trait SharedMethods
         return $commands;
     }
 
-    protected function addCommandArgument($options, $type = null)
+    protected function toProcessCommand($options, $type = null, $isFlatten = true, $isArtisanCommand = true)
+    {
+        $command = $this->addCommandArgument($options, $type, $isArtisanCommand);
+        if (is_bool($isFlatten) && $isFlatten) {
+            return $this->flattenArguments($command);
+            
+        }
+
+        if (is_string($isFlatten)) {
+            return $this->toCommandString($command);
+        }
+
+        return $command;
+    }
+
+    protected function addCommandArgument($options, $type = null, $isArtisanCommand = true)
     {
         $command = $this->getCommand($type);
-        return [PHP_BINARY, base_path('artisan'), $command, $options];
+        $commandArr = is_array($options) ? [$command, $options] : [$command, ...$options];
+        if($isArtisanCommand) {
+            return [PHP_BINARY, base_path('artisan'), ...$commandArr];
+        }
+        return $commandArr;
     }
 
     /**
@@ -268,17 +297,32 @@ trait SharedMethods
     {
         // Initialize an array to store formatted options
         $options = [];
-
-        // Loop through the options in the command array
-        foreach ($arguments[1] as $option => $value) {
-            // If the option has a boolean value, include only the option without a value
-            if ($value === true) {
-                $options[] = $option;
-            } else {
-                // If the option has a non-boolean value, include both the option and its value
-                $options[] = $option == 'name' ? $value : "$option=$value";
+        // Recursive function to flatten nested arrays
+        $flatten = function ($argument) use (&$options, &$flatten) {
+            if (is_array($argument)) {
+                foreach ($argument as $option => $value) {
+                    // If the value is true, include only the option without a value
+                    if ($value === true) {
+                        $options[] = $option;
+                    } else {
+                        // If the value is an array, recursively flatten it
+                        if (is_array($value)) {
+                            $flatten($value);
+                        } else {
+                            // If the option has a non-boolean value, include both the option and its value
+                            if($option == 'name' || is_int($option)) {
+                               $options[] = $value;
+                            } else {
+                               $options[] = "$option=$value";
+                            }
+                        }
+                    }
+                }
             }
-        }
+        };
+
+        // Call the recursive function with the initial arguments
+        $flatten($arguments);
 
         return $options;
     }
