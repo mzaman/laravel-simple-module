@@ -260,9 +260,9 @@ trait SharedMethods
 
         return $commands;
     }
-
+        
     /**
-     * Convert the provided options into a process command.
+     * Convert the provided options into a process command, either flattened arguments or a command string.
      *
      * @param array|string $options        The options for the command.
      * @param string|null  $type           The type of instance (e.g., model, service, repository, etc.).
@@ -276,15 +276,9 @@ trait SharedMethods
     {
         $command = $this->addCommandArgument($options, $type, $isArtisanCommand);
 
-        if (is_bool($isFlatten) && $isFlatten) {
-            return $this->flattenArguments($command);
-        }
-
-        if (is_string($isFlatten)) {
-            return $this->toCommandString($command);
-        }
-
-        return $command;
+        return is_bool($isFlatten) && $isFlatten
+            ? $this->flattenArguments($command)
+            : (is_string($isFlatten) ? $this->toCommandString($command) : $command);
     }
 
     /**
@@ -299,14 +293,12 @@ trait SharedMethods
     protected function addCommandArgument($options, $type = null, $isArtisanCommand = true)
     {
         $command = $this->getCommand($type);
-        $commandArr = is_array($options) ? [$command, $options] : [$command, ...$options];
 
-        if ($isArtisanCommand) {
-            return [PHP_BINARY, base_path('artisan'), ...$commandArr];
-        }
-
-        return $commandArr;
+        return $isArtisanCommand
+            ? [PHP_BINARY, base_path('artisan'), ...(is_array($options) ? [$command, $options] : [$command, ...$options])]
+            : (is_array($options) ? [$command, $options] : [$command, ...$options]);
     }
+
 
 
     /**
