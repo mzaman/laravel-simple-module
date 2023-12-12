@@ -261,12 +261,23 @@ trait SharedMethods
         return $commands;
     }
 
+    /**
+     * Convert the provided options into a process command.
+     *
+     * @param array|string $options        The options for the command.
+     * @param string|null  $type           The type of instance (e.g., model, service, repository, etc.).
+     * @param bool|string  $isFlatten      Whether to flatten the arguments or create a command string.
+     *                                     If a string is provided, it determines the command string type.
+     * @param bool         $isArtisanCommand Whether the command is an Artisan command (default: true).
+     *
+     * @return array|string The process command, flattened arguments, or command string.
+     */
     protected function toProcessCommand($options, $type = null, $isFlatten = true, $isArtisanCommand = true)
     {
         $command = $this->addCommandArgument($options, $type, $isArtisanCommand);
+
         if (is_bool($isFlatten) && $isFlatten) {
             return $this->flattenArguments($command);
-            
         }
 
         if (is_string($isFlatten)) {
@@ -276,15 +287,27 @@ trait SharedMethods
         return $command;
     }
 
+    /**
+     * Add command arguments based on the type and return the complete command array.
+     *
+     * @param array|string $options        The options for the command.
+     * @param string|null  $type           The type of instance (e.g., model, service, repository, etc.).
+     * @param bool         $isArtisanCommand Whether the command is an Artisan command (default: true).
+     *
+     * @return array The complete command array.
+     */
     protected function addCommandArgument($options, $type = null, $isArtisanCommand = true)
     {
         $command = $this->getCommand($type);
         $commandArr = is_array($options) ? [$command, $options] : [$command, ...$options];
-        if($isArtisanCommand) {
+
+        if ($isArtisanCommand) {
             return [PHP_BINARY, base_path('artisan'), ...$commandArr];
         }
+
         return $commandArr;
     }
+
 
     /**
      * Flatten the command arguments to an array.
