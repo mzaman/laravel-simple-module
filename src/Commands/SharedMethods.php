@@ -260,6 +260,28 @@ trait SharedMethods
 
         return $commands;
     }
+
+    /**
+     * Extract the Artisan command and its arguments from the given parameters.
+     *
+     * @param array $parameters The command parameters.
+     * @return array|null An associative array containing the command and its arguments, or null if not an Artisan command.
+     */
+    function qualifyArtisanCommand($parameters)
+    {
+        // Check if the parameters match the Artisan Command format
+        if ($this->isArtisanCommand($parameters)) {
+            // Extract the command and arguments
+            $command = $parameters[count($parameters) - 2];
+            $arguments = end($parameters);
+
+            // Return the result as an associative array
+            return [$command, $arguments];
+        }
+
+        // Return null if not an Artisan command
+        return null;
+    }
         
     /**
      * Convert the provided options into a process command, either flattened arguments or a command string.
@@ -298,8 +320,6 @@ trait SharedMethods
             ? [PHP_BINARY, base_path('artisan'), ...(is_array($options) ? [$command, $options] : [$command, ...$options])]
             : (is_array($options) ? [$command, $options] : [$command, ...$options]);
     }
-
-
 
     /**
      * Flatten the command arguments to an array.
@@ -423,6 +443,42 @@ trait SharedMethods
 
         // Return the array representation of the command
         return [$commandName, $options];
+    }
+
+    /**
+     * Check if the parameters match the Symfony Process format (flattened array).
+     *
+     * @param array|string $parameters The command parameters.
+     * @return bool True if it's a Symfony Process, false otherwise.
+     */
+    protected function isSymfonyProcess($parameters)
+    {
+        // Check if the parameters match the Symfony Process format (flattened array)
+        return is_array($parameters) && !is_array(end($parameters));
+    }
+
+    /**
+     * Check if the parameters match the Artisan Command format.
+     *
+     * @param array $parameters The command parameters.
+     * @return bool True if it's an Artisan Command, false otherwise.
+     */
+    protected function isArtisanCommand($parameters)
+    {
+        // Check if the parameters match the Artisan Command format
+        return is_array($parameters) && count($parameters) >= 2 && is_string($parameters[count($parameters) - 2]) && is_array(end($parameters));
+    }
+
+    /**
+     * Check if the parameters match the Shell Command Line format.
+     *
+     * @param string $parameters The command parameters.
+     * @return bool True if it's a Shell Command Line, false otherwise.
+     */
+    protected function isShellCommandLine($parameters)
+    {
+        // Check if the parameters match the Shell Command Line format
+        return is_string($parameters);
     }
 
 
