@@ -6,8 +6,8 @@ use Illuminate\Foundation\Console\ModelMakeCommand;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputOption;
 use LaravelSimpleModule\Commands\SharedMethods;
-use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
+use LaravelSimpleModule\Helpers\AsyncCommand;
+use LaravelSimpleModule\Constants\CommandType;
 
 class MakeModelCommand extends ModelMakeCommand
 {
@@ -19,35 +19,7 @@ class MakeModelCommand extends ModelMakeCommand
      */
     public function handle()
     {
-        $commands = $this->getModelTraitCommands();
-
-        $processes = [];
-
-        // Create processes for each command
-        foreach ($commands as $command) {
-            $process = new Process($command);
-            $process->start();
-            // $processes[] = $process;
-            $process->wait();
-            while ($process->isRunning()) {
-                $pid = $process->getPid();
-                $this->info("waiting for process $pid to finish...");
-            }
-
-            echo $process->getOutput();
-            
-        }
-
-        // Wait for all processes to complete
-        // foreach ($processes as $process) {
-        //     $process->wait();
-        //     while ($process->isRunning()) {
-        //         $pid = $process->getPid();
-        //         $this->info("waiting for process $pid to finish...");
-        //     }
-
-        //     echo $process->getOutput();
-        // }
+        $this->createModelTraits();
 
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();

@@ -200,19 +200,6 @@ trait SharedMethods
     }
 
     /**
-     * Call Artisan command with given arguments.
-     *
-     * @param string $command Artisan command name.
-     * @param array  $options Command options.
-     *
-     * @return void
-     */
-    protected function callArtisanCommand($command, $options)
-    {
-        $this->call($command, $options);
-    }
-    
-    /**
      * Execute commands asynchronously with the given options.
      *
      * @param array        $commands    The list of commands with options.
@@ -220,7 +207,7 @@ trait SharedMethods
      *
      * @return void
      */
-    protected function asyncCall($commands, $commandType)
+    protected function asyncCall($commands, $commandType = null)
     {
         // Create an instance of AsyncCommand with the provided commands
         $asyncCommand = new AsyncCommand($commands);
@@ -237,24 +224,21 @@ trait SharedMethods
      */
     protected function createModelTraits()
     {
-        $commands = $this->getModelTraitCommands();
-        foreach ($commands as $key => $command) {
-            $this->call($command[2], $command[3]);
-        }
-
-        return Command::SUCCESS;
+        $traitCommands = $this->getModelTraitCommands(CommandType::SYMFONY);
+        $this->asyncCall($traitCommands);
     } 
     
     /**
      * Get model trait commands.
      *
-     * @param  bool $isFlatten Parse command as an array representation.
+     * @param string|null  $commandType  The type of command (CommandType::ARTISAN, CommandType::SYMFONY, CommandType::SHELL, etc.).
      *
      * @return array|string[]
      */
-    protected function getModelTraitCommands($isFlatten = true)
+    protected function getModelTraitCommands($commandType = CommandType::SYMFONY)
     {
         $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
+
         $namespace = $model['namespace'];
         $class = $model['class'];
 
@@ -274,12 +258,61 @@ trait SharedMethods
                 '--force' => $this->isAvailable($traitClass) ? true : false,
             ]);
 
-            $command = $this->toProcessCommand($commandOptions, 'trait', $isFlatten);
-
+            $command = $this->toCommandArgument([$this->getCommand('trait'), $commandOptions], $commandType);
             array_push($commands, $command);
         }
 
         return $commands;
+    }
+
+    /**
+     * Convert the given parameter to command arguments based on the command type.
+     *
+     * @param array|string $parameter    The command parameter.
+     * @param string|null  $commandType  The type of command (CommandType::ARTISAN, CommandType::SYMFONY, CommandType::SHELL, etc.).
+     *
+     * @return array|null An associative array containing the command and its arguments, or null if not a recognized command type.
+     */
+    protected function toCommandArgument($parameter, $commandType = null)
+    {
+
+        $commandType = $commandType ?? $this->determineCommandType($parameter);
+
+        switch ($commandType) {
+            case CommandType::ARTISAN:
+                return $this->toArtisanArgument($parameter);
+            
+            case CommandType::SYMFONY:
+                return $this->toSymfonyArgument($parameter);
+            
+            case CommandType::SHELL:
+                return $this->toShellArgument($parameter);
+            
+            default:
+                // Handle other command types if needed
+                return $this->toArtisanArgument($parameter);
+        }
+    }
+
+    /**
+     * Determine the type of command.
+     *
+     * @param string|array $command The command to be executed.
+     *
+     * @return string The command type.
+     */
+    protected function determineCommandType($command)
+    {
+        if ($this->isArtisanArgument($command)) {
+            return CommandType::ARTISAN;
+        } elseif ($this->isSymfonyArgument($command)) {
+            return CommandType::SYMFONY;
+        } elseif ($this->isShellArgument($command)) {
+            return CommandType::SHELL;
+        }
+
+        // Return a default type or handle other cases if needed
+        return CommandType::ARTISAN;
     }
 
     /**
@@ -290,9 +323,7 @@ trait SharedMethods
      */
     protected function toArtisanArgument($parameter)
     {
-        // Check if the parameter match the Artisan Command format
         if ($this->isArtisanArgument($parameter)) {
-            // Extract the command and arguments
             $command = $parameter[count($parameter) - 2];
             $arguments = end($parameter);
 
@@ -322,10 +353,8 @@ trait SharedMethods
      */
     protected function toSymfonyArgument($parameter)
     {
-        // Check if the parameter match the Artisan Command format
         if ($this->isArtisanArgument($parameter)) {
-            // Extract the command and arguments
-            $arguments = $this->flattenArguments($parameter);
+            $parameter = $this->flattenArguments($parameter);
             return $this->toSymfonyArgument($parameter);
         }
 
@@ -350,9 +379,7 @@ trait SharedMethods
      */
     protected function toShellArgument($parameter)
     {
-        // Check if the parameter match the Artisan Command format
         if ($this->isArtisanArgument($parameter)) {
-            // Extract the command and arguments
             $parameter = implode(' ', $this->flattenArguments($parameter));
             return $this->toShellArgument($parameter);
         }
@@ -692,7 +719,6 @@ trait SharedMethods
      */
     protected function isArtisanArgument($parameter)
     {
-        // Check if the parameter match the Artisan Command format
         return (
             is_array($parameter) &&
             count($parameter) >= 2 &&

@@ -37,9 +37,9 @@ class AsyncCommand
     {
         $pool = Pool::create();
         foreach ($this->commands as $command) {
-            $pool->add(function () use ($command) {
+            $pool->add(function () use ($command, $commandType) {
                 $commandType = $commandType ?? $this->determineCommandType($command);
-
+                
                 switch ($commandType) {
                     case CommandType::ARTISAN:
                         $this->callArtisanCommand($command);
@@ -57,32 +57,20 @@ class AsyncCommand
                         // Handle other command types if needed
                         break;
                 }
+            })
+            ->then(function ($output) {
+                // On success, `$output` is returned by the process or callable you passed to the queue.
+            })
+            ->catch(function ($exception) {
+                // When an exception is thrown from within a process, it's caught and passed here.
+            })
+            ->timeout(function () {
+                // A process took too long to finish.
             });
         }
 
         // Wait for all processes to complete
         $pool->wait();
-    }
-
-    /**
-     * Determine the type of command.
-     *
-     * @param string|array $command The command to be executed.
-     *
-     * @return string The command type.
-     */
-    protected function determineCommandType($command)
-    {
-        if ($this->isArtisanArgument($command)) {
-            return CommandType::ARTISAN;
-        } elseif ($this->isSymfonyArgument($command)) {
-            return CommandType::SYMFONY;
-        } elseif ($this->isShellArgument($command)) {
-            return CommandType::SHELL;
-        }
-
-        // Return a default type or handle other cases if needed
-        return CommandType::ARTISAN;
     }
 
     /**
@@ -93,8 +81,9 @@ class AsyncCommand
     protected function callArtisanCommand($command)
     {
         $arguments = $this->toArtisanArgument($command);
+
         // Artisan command
-        $exitCode = Artisan::call($arguments);
+        $exitCode = Artisan::call($arguments[0], $arguments[1]);
 
         // Output the result
         echo Artisan::output();
@@ -120,7 +109,7 @@ class AsyncCommand
         // Output the result
         while ($process->isRunning()) {
             $pid = $process->getPid();
-            $this->info("waiting for process $pid to finish...");
+            echo "waiting for process $pid to finish...";
         }
 
         echo $process->getOutput();
@@ -146,7 +135,7 @@ class AsyncCommand
         // Output the result
         while ($process->isRunning()) {
             $pid = $process->getPid();
-            $this->info("waiting for process $pid to finish...");
+            echo "waiting for process $pid to finish...";
         }
 
         // Output the result
