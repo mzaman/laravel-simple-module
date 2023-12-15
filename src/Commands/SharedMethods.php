@@ -8,6 +8,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use LaravelSimpleModule\CreateFile;
 use LaravelSimpleModule\Helpers\Change;
+use LaravelSimpleModule\Constants\CommandType;
+use LaravelSimpleModule\Helpers\AsyncCommand;
 
 trait SharedMethods
 {
@@ -209,6 +211,24 @@ trait SharedMethods
     {
         $this->call($command, $options);
     }
+    
+    /**
+     * Execute commands asynchronously with the given options.
+     *
+     * @param array        $commands    The list of commands with options.
+     * @param string|null  $commandType The type of command to execute (CommandType::ARTISAN, CommandType::SYMFONY, etc.).
+     *
+     * @return void
+     */
+    protected function asyncCall($commands, $commandType)
+    {
+        // Create an instance of AsyncCommand with the provided commands
+        $asyncCommand = new AsyncCommand($commands);
+
+        // Run the commands asynchronously with the specified command type
+        $asyncCommand->run($commandType);
+    }
+
 
     /**
      * Create model traits
@@ -362,7 +382,6 @@ trait SharedMethods
     {
         $parameter = $this->removeArtisanPrefix($parameter);
         $parameter = $this->firstOrPrepend($parameter, [base_path('artisan'), 'artisan'], base_path('artisan'));
-
         $parameter = $this->firstOrPrepend($parameter, [PHP_BINARY, 'php'], PHP_BINARY);
         return $parameter;
     }
