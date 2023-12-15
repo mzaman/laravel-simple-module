@@ -2,6 +2,7 @@
 
 namespace LaravelSimpleModule\Commands;
 
+use \Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -262,27 +263,129 @@ trait SharedMethods
     }
 
     /**
-     * Extract the Artisan command and its arguments from the given parameters.
+     * Extract the Artisan command and its arguments from the given parameter.
      *
-     * @param array $parameters The command parameters.
+     * @param array $parameter The command parameter.
      * @return array|null An associative array containing the command and its arguments, or null if not an Artisan command.
      */
-    function qualifyArtisanCommand($parameters)
+    protected function toArtisanArgument($parameter)
     {
-        // Check if the parameters match the Artisan Command format
-        if ($this->isArtisanCommand($parameters)) {
+        // Check if the parameter match the Artisan Command format
+        if ($this->isArtisanArgument($parameter)) {
             // Extract the command and arguments
-            $command = $parameters[count($parameters) - 2];
-            $arguments = end($parameters);
+            $command = $parameter[count($parameter) - 2];
+            $arguments = end($parameter);
 
             // Return the result as an associative array
             return [$command, $arguments];
         }
 
+        if ($this->isSymfonyArgument($parameter)) {
+            $parameter = $this->unflattenArguments($parameter);
+            return $this->toArtisanArgument($parameter);
+        }
+
+        if ($this->isShellArgument($parameter)) {
+            $parameter = explode(' ', Str::squish($parameter));
+            return $this->toArtisanArgument($parameter);
+        }
+
         // Return null if not an Artisan command
         return null;
     }
-        
+
+    /**
+     * Extract the Symfony command and its arguments from the given parameter.
+     *
+     * @param array $parameter The command parameter.
+     * @return array|null An associative array containing the command and its arguments, or null if not an Symfony command.
+     */
+    protected function toSymfonyArgument($parameter)
+    {
+        // Check if the parameter match the Artisan Command format
+        if ($this->isArtisanArgument($parameter)) {
+            // Extract the command and arguments
+            $arguments = $this->flattenArguments($parameter);
+            return $this->toSymfonyArgument($parameter);
+        }
+
+        if ($this->isSymfonyArgument($parameter)) {
+            return $this->qualifyArtisanPrefix($parameter);
+        }
+
+        if ($this->isShellArgument($parameter)) {
+            $parameter = explode(' ', Str::squish($parameter));
+            return $this->toSymfonyArgument($parameter);
+        }
+
+        // Return null if not an Artisan command
+        return null;
+    }
+    
+    /**
+     * Extract the Shell command and its arguments from the given parameter.
+     *
+     * @param array $parameter The command parameter.
+     * @return string|null An associative array containing the command and its arguments, or null if not an Shell command.
+     */
+    protected function toShellArgument($parameter)
+    {
+        // Check if the parameter match the Artisan Command format
+        if ($this->isArtisanArgument($parameter)) {
+            // Extract the command and arguments
+            $parameter = implode(' ', $this->flattenArguments($parameter));
+            return $this->toShellArgument($parameter);
+        }
+
+        if ($this->isSymfonyArgument($parameter)) {
+            $parameter = implode(' ', $parameter);
+            return $this->toShellArgument($parameter);
+        }
+
+        if ($this->isShellArgument($parameter)) {
+            $parameter = Str::squish($parameter);
+            return $this->qualifyArtisanPrefix($parameter);
+        }
+
+        // Return null if not an Artisan command
+        return null;
+    }
+    
+    /**
+     * Ensure that the "php artisan" part is present in the command.
+     *
+     * @param array $parameter The parameter array.
+     *
+     * @return array The modified parameter array with "php artisan" included.
+     */
+    protected function qualifyArtisanPrefix($parameter)
+    {
+        $parameter = $this->removeArtisanPrefix($parameter);
+        $parameter = $this->firstOrPrepend($parameter, [base_path('artisan'), 'artisan'], base_path('artisan'));
+
+        $parameter = $this->firstOrPrepend($parameter, [PHP_BINARY, 'php'], PHP_BINARY);
+        return $parameter;
+    }
+
+    /**
+     * Remove "php artisan" if it exists from the input array or string.
+     *
+     * @param array|string $parameter The input array or string.
+     *
+     * @return array|string The modified array or string.
+     */
+    protected function removeArtisanPrefix($parameter)
+    {
+        // Convert string to array if needed
+        $array = is_string($parameter) ? explode(' ', $parameter) : $parameter;
+
+        // Remove "php artisan" if it exists
+        $array = array_diff($array, [PHP_BINARY, 'php', base_path('artisan'), 'artisan']);
+
+        // Return the modified array or string
+        return is_string($parameter) ? implode(' ', $array) : array_values($array);
+    }
+
     /**
      * Convert the provided options into a process command, either flattened arguments or a command string.
      *
@@ -300,7 +403,7 @@ trait SharedMethods
 
         return is_bool($isFlatten) && $isFlatten
             ? $this->flattenArguments($command)
-            : (is_string($isFlatten) ? $this->toCommandString($command) : $command);
+            : (is_string($isFlatten) ? $this->toCommandString($command, $isArtisanCommand) : $command);
     }
 
     /**
@@ -316,10 +419,108 @@ trait SharedMethods
     {
         $command = $this->getCommand($type);
 
-        return $isArtisanCommand
-            ? [PHP_BINARY, base_path('artisan'), ...(is_array($options) ? [$command, $options] : [$command, ...$options])]
-            : (is_array($options) ? [$command, $options] : [$command, ...$options]);
+        // If it's an Artisan command and PHP_BINARY and artisan are not already present, add them
+        if ($isArtisanCommand/* && !in_array(PHP_BINARY, $options) && !in_array(base_path('artisan'), $options)*/) {
+            $parameter = is_array($options) ? [$command, $options] : [$command, ...$options];
+            return $this->qualifyArtisanPrefix($parameter);
+            // $options = [PHP_BINARY, base_path('artisan'), ...(is_array($options) ? [$command, $options] : [$command, ...$options])];
+        } else {
+            $options = is_array($options) ? [$command, $options] : [$command, ...$options];
+        }
+
+        return $options;
+
+        // return $isArtisanCommand
+        //     ? [PHP_BINARY, base_path('artisan'), ...(is_array($options) ? [$command, $options] : [$command, ...$options])]
+        //     : (is_array($options) ? [$command, $options] : [$command, ...$options]);
     }
+
+    /**
+     * Find matching items in an array and prepend another item if no matches are found.
+     *
+     * @param array|string $array      The input array or string.
+     * @param array        $search     The array of items to search for.
+     * @param string       $item       The item to prepend if no matches are found.
+     *
+     * @return array|string The modified array or string.
+     */
+    protected function firstOrPrepend($parameter, $search, $item)
+    {
+        // Convert string to array if needed
+        $array = is_string($parameter) ? [$parameter] : $parameter;
+
+        // Check if any item in the search array exists in the input array
+        if (count(array_filter($array, 'is_string')) > 0 && count(array_intersect($search, array_filter($array, 'is_string'))) > 0) {
+            // Matching item found, return the original array or string
+            return is_string($parameter) ? $parameter : array_values($array);
+        } else {
+            // Prepend the new item to the array
+            array_unshift($array, $item);
+
+            // Return the modified array or string
+            return is_string($parameter) ? implode(' ', $array) : array_values($array);
+        }
+    }
+
+    /**
+     * Find a value in an array and split the array based on its position.
+     *
+     * @param array  $array The input array.
+     * @param string $value The value to find in the array.
+     *
+     * @return array|null The split array or null if the value is not found.
+     */
+    protected function splitArrayByValue($array, $value)
+    {
+        $key = array_search($value, $array);
+
+        if ($key !== false) {
+            $before = array_slice($array, 0, $key);
+            $after = array_slice($array, $key + 1);
+
+            return [$before, $array[$key], $after];
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the position of the command in the array and slice it accordingly.
+     *
+     * @param array $parameter The array of command parameter.
+     *
+     * @return array|null The sliced array or null if the command position is not found.
+     */
+    protected function unflattenArguments($parameter)
+    {
+        $command = $this->getCommand($parameter);
+        if (is_array($parameter) && $command !== null) {
+            $arguments = array_splice($parameter, array_search($command, $parameter) + 1);
+        } else {
+            $arguments = $parameter;
+        }
+
+        // Convert the remaining arguments to an associative array
+        $options = [];
+        
+        foreach ($arguments as $key => $argument) {
+            // Split each argument into option and value (if applicable)
+            list($option, $value) = explode('=', $argument, 2) + [null, true];
+
+            // Set the name argument
+            if ($key == 0) {
+                $value = $option;
+                $option = 'name';
+            }
+
+            // If no value is provided, assume it's a boolean option
+            $options[$option] = $value;
+        }
+
+        // Return the sliced array with the command and options
+        return isset($command) ? [...$parameter, $options] : [$options];
+    }
+
 
     /**
      * Flatten the command arguments to an array.
@@ -363,21 +564,29 @@ trait SharedMethods
     }
 
     /**
-     * Get the command name for a specific type of instance (e.g., model, service, repository, etc.).
+     * Find the position of the command in the array and return the name argument command. Get the command name for a specific type of instance (e.g., model, service, repository, etc.).
      *
-     * @param array|string|null $options The type of instance or command options.
+     * @param array|string|null $arguments The type of instance or command arguments.
      *
      * @return string The command name.
      */
-    protected function getCommand($options = null)
+    protected function getCommand($parameter = null)
     {
-        // If options include a custom command name, use it
-        if (is_array($options) && $options[0] == PHP_BINARY && isset($options[2])) {
-            return $options[2];
+        if(is_array($parameter)) {
+            foreach ($parameter as $key => $argument) {
+                if ($this->isArtisanCommand($argument)) {
+                    // Store the result of array_slice() in a variable
+                    $slicedArray = array_slice($parameter, $key);
+
+                    // Found the command, extract the name argument command
+                    return array_shift($slicedArray);
+                }
+            }
+            return null;
         }
 
         // Use the provided $type or fallback to the default type and format the type name for display.
-        $type = $this->toLowerSingular($options ?: $this->type);
+        $type = $this->toLowerSingular($parameter ?: $this->type);
 
         return "make:{$type}";
     }
@@ -394,13 +603,13 @@ trait SharedMethods
     private function toCommandString($arguments, $isArtisanCommand = false)
     {
         // Build the base command string with 'php artisan' and the command name
-        $argumentString = $arguments[0] . ' ';
+        // $argumentString = $arguments[0] . ' ';
 
         // Initialize an array to store formatted options
         $options = $this->flattenArguments($arguments);
 
         // Concatenate the options and append them to the command string
-        $argumentString .= implode(' ', $options);
+        $argumentString = implode(' ', $options);
 
         if ($isArtisanCommand) {
             $argumentString = PHP_BINARY . ' ' . base_path('artisan') . ' ' . $argumentString;
@@ -409,7 +618,6 @@ trait SharedMethods
         // Return the formatted command string
         return $argumentString;
     }
-
 
     /**
      * Convert the output command string to an array representation.
@@ -451,31 +659,46 @@ trait SharedMethods
      * @param array|string $parameters The command parameters.
      * @return bool True if it's a Symfony Process, false otherwise.
      */
-    protected function isSymfonyProcess($parameters)
+    protected function isSymfonyArgument($parameters)
     {
         // Check if the parameters match the Symfony Process format (flattened array)
         return is_array($parameters) && !is_array(end($parameters));
     }
-
+    
     /**
-     * Check if the parameters match the Artisan Command format.
+     * Check if the parameter match the Artisan Command format.
      *
-     * @param array $parameters The command parameters.
+     * @param array $parameter The command parameter.
      * @return bool True if it's an Artisan Command, false otherwise.
      */
-    protected function isArtisanCommand($parameters)
+    protected function isArtisanArgument($parameter)
     {
-        // Check if the parameters match the Artisan Command format
-        return is_array($parameters) && count($parameters) >= 2 && is_string($parameters[count($parameters) - 2]) && is_array(end($parameters));
+        // Check if the parameter match the Artisan Command format
+        return (
+            is_array($parameter) &&
+            count($parameter) >= 2 &&
+            $this->isArtisanCommand($parameter[count($parameter) - 2]) &&
+            is_array(end($parameter))
+        );
     }
 
+    /**
+     * Check if a command exists in the registered Artisan commands.
+     *
+     * @param string $command The command name to check.
+     * @return bool True if the command exists, false otherwise.
+     */
+    protected function isArtisanCommand($command)
+    {
+        return is_string($command) && array_key_exists($command, Artisan::all());
+    }
     /**
      * Check if the parameters match the Shell Command Line format.
      *
      * @param string $parameters The command parameters.
      * @return bool True if it's a Shell Command Line, false otherwise.
      */
-    protected function isShellCommandLine($parameters)
+    protected function isShellArgument($parameters)
     {
         // Check if the parameters match the Shell Command Line format
         return is_string($parameters);
