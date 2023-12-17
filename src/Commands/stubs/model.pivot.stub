@@ -3,15 +3,8 @@
 namespace {{ namespace }};
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use {{ namespace }}\Traits\Attribute\{{ class }}Attribute;
-use {{ namespace }}\Traits\Method\{{ class }}Method;
-use {{ namespace }}\Traits\Relationship\{{ class }}Relationship;
-use {{ namespace }}\Traits\Scope\{{ class }}Scope;
 
 class {{ class }} extends Pivot
 {
-    use {{ class }}Attribute,
-        {{ class }}Method,
-        {{ class }}Relationship,
-        {{ class }}Scope;
+    //
 }
