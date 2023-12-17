@@ -16,6 +16,10 @@ use Illuminate\Support\Str;
 use LaravelSimpleModule\Commands\SharedMethods;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use LaravelSimpleModule\Helpers\Change;
+use LaravelSimpleModule\Constants\CommandType;
+// use Symfony\Component\Process\Process;
+// use LaravelSimpleModule\Helpers\AsyncCommand;
+// use Illuminate\Support\Facades\Process;
 
 class MakeModuleCommand extends Command implements PromptsForMissingInput
 {
@@ -103,7 +107,9 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         $this->appComponents = Change::case($this->applicationComponents, 'lower');
         // $this->appComponents = Change::case($this->handleChoices('Select components to include', $this->applicationComponents), 'lower');
 
+        $commandType = CommandType::SYMFONY;
         $commands = [];
+
         foreach ($this->appComponents as $component) {
             $componentName = $component . 'Models';
             $$component = $this->handleChoices("Select models to create {$component} for", $this->models, ['All', 'None'], 0);
@@ -114,13 +120,14 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
             // Add make model command with options
             $commandOptions = array_filter([
                 'name' => $namespacedModel,
-                '--migration' => in_array($model, $migration),
-                '--factory' => in_array($model, $factory),
-                '--seed' => in_array($model, $seeder),
+                '--migration' => in_array($model, $migration) ? true : false,
+                '--factory' => in_array($model, $factory) ? true : false,
+                '--seed' => in_array($model, $seeder) ? true : false,
                 '--path' => $namespacedModel //TODO: Fix path option
             ]);
 
-            $command = ['make:model', $commandOptions];
+            $command = $this->toCommandArgument([$this->getCommand('model'), $commandOptions], $commandType);
+
             array_push($commands, $command);
 
             // Add make event commands
@@ -132,7 +139,8 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                         'name' => $this->getNamespace() . "\\Events\\$model\\$eventName"
                     ];
 
-                    $command = ['make:event', $commandOptions];
+                    $command = $this->toCommandArgument([$this->getCommand('event'), $commandOptions], $commandType);
+                    // $command = $this->toProcessCommand($commandOptions, 'event', false, true);
                     array_push($commands, $command);
                 }
             }
@@ -144,7 +152,8 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                         'name' => $this->getNamespace() . "\\Listeners\\$listenerName"
                     ];
 
-                    $command = ['make:listener', $commandOptions];
+                    $command = $this->toCommandArgument([$this->getCommand('listener'), $commandOptions], $commandType);
+                    // $command = $this->toProcessCommand($commandOptions, 'listener', false, true);
                     array_push($commands, $command);
             }
 
@@ -152,17 +161,19 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 $layerName = $this->toPascal($layer);
                 // Add make controller command with options
                 $commandOptions = array_filter([
-                        'name' => $this->getNamespace() . "\\Http/Controllers/$layerName/{$model}{$layerName}Controller",
-                        '--model' => $namespacedModel,
-                        '--api' => $layer == 'api',
-                        '--requests' => in_array($model, $request),
-                        '--repository' => in_array($model, $repository),
-                        '--service' => in_array($model, $service),
-                        '--policy' => in_array($model, $policy),
-                        '--views' => $layer !== 'api' && in_array($model, $view),
-                    ]);
+                    'name' => $this->getNamespace() . "\\Http/Controllers/$layerName/{$model}{$layerName}Controller",
+                    '--model' => $namespacedModel,
+                    '--api' => $layer == 'api' ? true : false,
+                    '--requests' => in_array($model, $request) ? true : false,
+                    '--repository' => in_array($model, $repository) ? true : false,
+                    '--service' => in_array($model, $service) ? true : false,
+                    '--policy' => in_array($model, $policy) ? true : false,
+                    '--views' => $layer !== 'api' && in_array($model, $view) ? true : false,
+                ]);
 
-                $command = ['make:controller', $commandOptions];
+                $command = $this->toCommandArgument([$this->getCommand('controller'), $commandOptions], $commandType);
+                // $command = $this->toProcessCommand($commandOptions, 'controller', false, true);
+                // $command = ['make:controller', $commandOptions];
                 array_push($commands, $command);
             }
 
@@ -185,14 +196,41 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         $this->bar = $this->output->createProgressBar(count($commands));
 
         $this->bar->start();
-        print_r($commands);
 
-        foreach ($commands as $key => $command) {
-            Artisan::call($command[0], $command[1]);
-            $this->bar->advance();
-            sleep(1);
-        }
+        $this->exec($commands);
 
+        // $process = new AsyncCommand($commands);
+        // $process->run();
+
+        // foreach ($commands as $key => $command) {
+        //     Artisan::call($command[0], $command[1]);
+        //     $this->bar->advance();
+        //     sleep(1);
+        // }
+// $process = new Process(['ls', '-lsa']);
+// $process->start();
+
+// while ($process->isRunning()) {
+//     // waiting for process to finish
+// }
+
+// echo $process->getOutput();
+
+        // foreach ($commands as $key => $command) {
+        //     echo $this->toCommandString($command) . "\n\n";
+        //     $this->info("Executing command: " . $command[0]);
+
+        //     // Execute the command and check for success
+        //     $exitCode = $this->call($command[0], $command[1]);
+
+        //     if ($exitCode !== 0) {
+        //         $this->error("Command failed: " . $command[0]);
+        //         return $exitCode;
+        //     }
+
+        //     $this->bar->advance();
+        //     // sleep(1);
+        // }
         // $this->makeModels();
         // $this->makeSeeders($seederModels);
         // $this->makeFactories($factoryModels);

@@ -231,13 +231,12 @@ trait SharedMethods
         $numberOfProcesses = count($commands);
         $processes = [];
         $classes = [];
-        $results = [];
 
         foreach ($commands as $key => $command) {
             $arguments = $this->toSymfonyArgument($command);
             $type = $this->getType($command);
             $class = $this->getClassFromArgument($command);
-            $classes[] = $class;
+            $classes[$key] = $class;
 
             // Start the process asynchronously
             $process = new Process($arguments); 
@@ -254,6 +253,12 @@ trait SharedMethods
 
         $timeout = 600; // Set a reasonable timeout in seconds
         $startTime = time();
+        $results = [
+            'success' => true, // Assume success initially
+            'results' => []
+        ];
+
+        $success = true;
 
         while (count($processes) > 0) {
             foreach ($processes as $key => $process) {
@@ -264,19 +269,29 @@ trait SharedMethods
 
                     // Check if the associated class file is created
                     $class = $classes[$key];
-                    if ($this->isClassFileCreated($class)) {
-                        echo "Removed: $class\n";
+                    // if (true || $this->isClassFileCreated($class)) 
+                    { // Fix $class array unset issue using another process
+                        // echo "Removed: $class\n";
                         unset($classes[$key]);
                     }
 
                     // Store the result of the finished process
                     // $results[$class] = $process->getExitCode();
-                    $results[] = [
-                        'exitCode' => $process->getExitCode(),
+                    $exitCode = $process->getExitCode();
+
+                    $results['results'][] = [
+                        'success' => $exitCode === 0, // Check if exitCode is 0
                         'status' => $process->getStatus(),
+                        'exitCode' => $exitCode,
+                        'commandline' => $process->getCommandline(),
                         'startTime' => $process->getStartTime(),
                         'lastOutputTime' => $process->getLastOutputTime(),
                     ];
+
+                    // If any process has a non-zero exitCode, set success to false
+                    if ($exitCode !== 0) {
+                        $success = false;
+                    }
                     echo $process->getOutput();
                 }
             }
@@ -295,6 +310,7 @@ trait SharedMethods
                     $finalCallback($results);
                 }
 
+                $results['success'] = false;
                 // Return the results collected so far
                 return $results;
             }
@@ -308,6 +324,8 @@ trait SharedMethods
         foreach ($processes as $process) {
             $process->wait();
         }
+
+        $results['success'] = $success;
 
         // Invoke the final callback after all processes are executed with the accumulated results
         if ($finalCallback instanceof \Closure) {
@@ -438,9 +456,9 @@ trait SharedMethods
     {
         $traitCommands = $this->getModelTraitCommands(CommandType::SYMFONY);
         return $this->asyncRun($traitCommands);
-        return $this->exec($traitCommands/*, function ($results) {
-            return $results;
-        }*/);
+        // return $this->exec($traitCommands/*, function ($results) {
+        //     return $results;
+        // }*/);
     } 
     
     /**

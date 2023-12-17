@@ -19,7 +19,9 @@ class MakeModelCommand extends ModelMakeCommand
      */
     public function handle()
     {
-        $this->createModelTraits();
+        if ($this->option('trait')) {
+            $handleTraits = $this->createModelTraits();
+        }
 
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
@@ -31,7 +33,7 @@ class MakeModelCommand extends ModelMakeCommand
         $this->qualifyOptionCreate('repository');
 
         if ($this->option('all')) {
-            // $this->input->setOption('module', true);
+            $this->input->setOption('trait', true);
             $this->input->setOption('service', true);
             $this->input->setOption('repository', true);
         } 
@@ -55,6 +57,10 @@ class MakeModelCommand extends ModelMakeCommand
         }
 
         $stub = $stub ?? '/stubs/model.stub';
+
+        if ($this->option('trait')) {
+            $stub = str_replace('.stub', '.trait.stub', $stub);
+        }
 
         return __DIR__.$stub;
     }
@@ -95,6 +101,8 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $options = [
             ['all', 'a', InputOption::VALUE_NONE, 'Generate a migration, factory and resource controller with request classes, views and policy for the model'],
+
+            ['trait', 't', InputOption::VALUE_NONE, 'Create new trait classes and use them in the model'],
 
             ['controller', 'c', InputOption::VALUE_NONE, 'Create a new controller for the model with request classes, views and a policy'],
 

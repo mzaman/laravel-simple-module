@@ -91,7 +91,8 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         if (! class_exists($namespacedModel) && $this->confirm("A {$namespacedModel} model does not exist. Do you want to generate it?", true)) {
             $this->call('make:model', [
                 'name' => $namespacedModel,
-                '--path' => $namespacedModel
+                '--path' => $namespacedModel,
+                '--trait' => true
             ]);
         }
 

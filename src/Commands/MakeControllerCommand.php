@@ -114,7 +114,8 @@ class MakeControllerCommand extends ControllerMakeCommand
         if (! class_exists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
             $this->call('make:model', [
                 'name' => $modelClass,
-                '--path' => $modelClass
+                '--path' => $modelClass,
+                '--trait' => true
             ]);
         }
 
