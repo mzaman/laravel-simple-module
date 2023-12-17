@@ -2,7 +2,6 @@
 
 namespace LaravelSimpleModule\Commands;
 
-use \Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -10,6 +9,9 @@ use LaravelSimpleModule\CreateFile;
 use LaravelSimpleModule\Helpers\Change;
 use LaravelSimpleModule\Constants\CommandType;
 use LaravelSimpleModule\Helpers\AsyncCommand;
+use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 trait SharedMethods
 {
@@ -185,18 +187,227 @@ trait SharedMethods
                 $file,
                 $this->stubPath
             );
-
-            $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
-            $path = $this->getPath($namespacedClass);
-            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+            
+            $this->printInfo($class, $this->type, $namespace);
 
             return $namespacedClass;
 
         } else { 
             $this->handleAvailability($namespacedClass);
         }
+    }
+
+    /**
+     * Print information about a class creation.
+     *
+     * @param string $class The class name.
+     * @param string|null $namespace The namespace of the class.
+     * @param string|null $type The type of the class.
+     *
+     * @return void
+     */
+    protected function printInfo($class, $type = null, $namespace = null)
+    {
+        $type = $type ?: $this->type;
+        $className = class_basename($class);
+        $namespacedClass = $namespace ? $namespace . "\\" . $className : $this->getQualifiedClass($class, $type);
+
+        $info = "<fg=yellow>{$type} <fg=green>{$className}</> [{$namespacedClass}]";
+        $path = $this->getPath($namespacedClass);
+        $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+    }
+
+    /**
+     * Execute commands asynchronously or synchronously with the given options.
+     *
+     * @param array $commands The list of commands with options.
+     * @param callable|null $finalCallback Final callback to be invoked when all processes are completed.
+     * @param callable|null $callback Callback function to be invoked.
+     *
+     * @return array An array of results from each command.
+     */
+    protected function exec($commands, $finalCallback = null, $callback = null)
+    {
+        $numberOfProcesses = count($commands);
+        $processes = [];
+        $classes = [];
+        $results = [];
+
+        foreach ($commands as $key => $command) {
+            $arguments = $this->toSymfonyArgument($command);
+            $type = $this->getType($command);
+            $class = $this->getClassFromArgument($command);
+            $classes[] = $class;
+
+            // Start the process asynchronously
+            $process = new Process($arguments); 
+            // $process->setTty(true); // TTY mode is not supported on Windows platform.
+            $process->start();
+            $processes[$key] = $process;
+
+            // Invoke the callback with the current command, class, and initial result
+            if ($callback instanceof \Closure) {
+                $initialResult = null; // Set your initial result here
+                $callback($class, $type, $initialResult);
+            }
+        }
+
+        $timeout = 600; // Set a reasonable timeout in seconds
+        $startTime = time();
+
+        while (count($processes) > 0) {
+            foreach ($processes as $key => $process) {
+                // Check if the process is still running
+                if (!$process->isRunning()) {
+                    // specific process has finished, so we remove it
+                    unset($processes[$key]);
+
+                    // Check if the associated class file is created
+                    $class = $classes[$key];
+                    if ($this->isClassFileCreated($class)) {
+                        echo "Removed: $class\n";
+                        unset($classes[$key]);
+                    }
+
+                    // Store the result of the finished process
+                    // $results[$class] = $process->getExitCode();
+                    $results[] = [
+                        'exitCode' => $process->getExitCode(),
+                        'status' => $process->getStatus(),
+                        'startTime' => $process->getStartTime(),
+                        'lastOutputTime' => $process->getLastOutputTime(),
+                    ];
+                    echo $process->getOutput();
+                }
+            }
+
+            // Check if the total elapsed time exceeds the timeout
+            if (time() - $startTime > $timeout) {
+                echo "Timeout reached. Remaining classes: " . implode(', ', $classes) . "\n";
+
+                // Terminate any remaining processes
+                foreach ($processes as $process) {
+                    $process->stop(0);
+                }
+
+                // Invoke the final callback after all processes are executed with the accumulated results
+                if ($finalCallback instanceof \Closure) {
+                    $finalCallback($results);
+                }
+
+                // Return the results collected so far
+                return $results;
+            }
+
+            // Sleep for a short interval before checking again
+            usleep(10000); // sleep for 10 milliseconds
+            // print_r($classes);
+        }
+
+        // Wait for the processes to finish
+        foreach ($processes as $process) {
+            $process->wait();
+        }
+
+        // Invoke the final callback after all processes are executed with the accumulated results
+        if ($finalCallback instanceof \Closure) {
+            $finalCallback($results);
+        }
+
+        // Return the results
+        return $results;
+    }
 
 
+    /**
+     * Check if a class file is created.
+     *
+     * @param string $class The class name.
+     *
+     * @return bool Whether the class file is created.
+     */
+    protected function isClassFileCreated($class)
+    {
+        $classPath = str_replace('\\', DIRECTORY_SEPARATOR, $class);
+        $classPath = app_path($classPath . '.php');
+
+        clearstatcache(true, $classPath);
+
+        return file_exists($classPath) && is_readable($classPath);
+    }
+
+
+    /**
+     * Asynchronously call Artisan command and wait for the class file to be created.
+     *
+     * @param string $command The Artisan command.
+     * @param array $arguments The arguments for the command.
+     *
+     * @return void
+     */
+    protected function asyncCall($command, $arguments) 
+    {
+        // Execute the command using Artisan::call
+        $this->call($command, $arguments);
+        $className = $this->getClassFromArgument([$command, $arguments]);
+        // Wait for the class file to be created
+        $this->waitUntilExists($className, 60); // Adjust the timeout as needed
+    }
+
+    /**
+     * Get class from Artisan argument.
+     *
+     * @param array $parameter The Artisan argument array.
+     *
+     * @return string|null The class name or null if not found.
+     */
+    protected function getClassFromArgument($parameter)
+    {
+        $arguments = $this->toArtisanArgument($parameter);
+        $type = $this->getType($arguments);
+        $class = is_array(end($arguments)) ? head(end($arguments)) : null;
+        return $this->getQualifiedClass($class, $type);
+    }
+
+    /**
+     * Wait for a class file to exist.
+     *
+     * @param string $class The class name.
+     * @param int $initialTimeout Initial timeout in seconds.
+     *
+     * @return bool Whether the class file exists.
+     * @throws \RuntimeException if the timeout is reached.
+     */
+    protected function waitUntilExists($class, $initialTimeout = 60)
+    {
+        while ($elapsedTime <= $initialTimeout) {
+            usleep(10000); // sleep for 10 milliseconds before checking again
+
+            if ($this->classFileExists($class)) {
+                // The following code will be executed if the file is created within the timeout
+                $this->printInfo($class);
+                // return true; // Return true once the file is created
+            }
+        }
+
+        // If the loop completes without returning, it means the timeout is reached
+        $adjustedTimeout = max($initialTimeout, $elapsedTime + 5); // Adjust by 5 seconds
+        throw new \RuntimeException("Timeout waiting for class file: $class (Adjusted timeout: $adjustedTimeout seconds)");
+
+    }
+
+    /**
+     * Check if a class file exists.
+     *
+     * @param string $class The class name.
+     *
+     * @return bool Whether the class file exists.
+     */
+    protected function classFileExists($class)
+    {
+        $exists = interface_exists($class) || trait_exists($class) || class_exists($class);
+
+        return $exists;
     }
 
     /**
@@ -207,13 +418,14 @@ trait SharedMethods
      *
      * @return void
      */
-    protected function asyncCall($commands, $commandType = null)
+    protected function asyncRun($commands, $commandType = null)
     {
         // Create an instance of AsyncCommand with the provided commands
         $asyncCommand = new AsyncCommand($commands);
 
         // Run the commands asynchronously with the specified command type
-        $asyncCommand->run($commandType);
+        return $asyncCommand->run($commandType);
+
     }
 
 
@@ -225,7 +437,10 @@ trait SharedMethods
     protected function createModelTraits()
     {
         $traitCommands = $this->getModelTraitCommands(CommandType::SYMFONY);
-        $this->asyncCall($traitCommands);
+        return $this->asyncRun($traitCommands);
+        return $this->exec($traitCommands/*, function ($results) {
+            return $results;
+        }*/);
     } 
     
     /**
@@ -452,6 +667,63 @@ trait SharedMethods
             : (is_string($isFlatten) ? $this->toCommandString($command, $isArtisanCommand) : $command);
     }
 
+    /**
+     * Call an Artisan command.
+     *
+     * @param string|array $command The Artisan command to be executed.
+     */
+    protected function callArtisanCommand($command)
+    {
+        $arguments = $this->toArtisanArgument($command);
+
+        // Artisan command
+        $exitCode = Artisan::call($arguments[0], $arguments[1]);
+
+        // Output the result
+        echo Artisan::output();
+    }
+
+    /**
+     * Call a Symfony Process command.
+     *
+     * @param string|array $command The Symfony Process command to be executed.
+     */
+    protected function callSymfonyCommand($command)
+    {
+        $arguments = $this->toSymfonyArgument($command);
+
+        // Symfony Process command
+        $process = new Process($arguments);
+
+        // Start the process asynchronously
+        $process->start();
+
+        // Wait for the process to finish
+        $process->wait();
+
+        echo $process->getOutput();
+    }
+
+    /**
+     * Call a Shell command.
+     *
+     * @param string|array $command The Shell command to be executed.
+     */
+    protected function callShellCommand($command)
+    {
+        $arguments = $this->toShellArgument($command);
+        // Symfony Process command
+        $process = Process::fromShellCommandline($arguments);
+
+        // Start the process asynchronously
+        $process->start();
+
+        // Wait for the process to finish
+        $process->wait();
+
+        // Output the result
+        echo $process->getOutput();
+    }
     /**
      * Add command arguments based on the type and return the complete command array.
      *
@@ -991,11 +1263,7 @@ trait SharedMethods
                 $this->interfaceStubPath
             );
 
-            // $this->line("<info>Created $interface interface:</info> {$namespacedInterface}");
-
-            $info = "<fg=yellow>{$this->type} Interface <fg=green>{$interface}</> [{$namespacedInterface}]";
-            $path = $this->getPath($namespacedInterface);
-            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
+            $this->printInfo($interface, $this->type . ' Interface', $namespacedInterface);
 
             return $namespacedInterface;
         } else {
@@ -1670,6 +1938,31 @@ trait SharedMethods
         $class = implode('\\', $this->parseNamespaceAndClass($class, $type));
         return $class;
     }
+
+    /**
+     * Get type from Artisan argument.
+     *
+     * @param array $argument The Artisan argument array.
+     *
+     * @return string|null The type of argument (option, argument, or command) or null if not recognized.
+     */
+    protected function getType($parameter = null) : string
+    {
+        if(is_array($parameter)) {
+            $arguments = $this->toArtisanArgument($parameter);
+            // Assuming the class name is the first argument
+            $typeArgument = head($arguments);
+            $classArgument = end($arguments);
+            $type = null;
+            if(is_array($classArgument) && is_string($typeArgument) && Str::contains($typeArgument, ':')) {
+                $commandArg = explode(':', $typeArgument);
+                $type = $this->toPascalSingular(end($commandArg));
+            }
+        }
+
+        return is_string($parameter) ? $this->toPascalSingular($parameter ?: $this->type) : ($type ?? $this->type);
+    }
+
     /**
      * Get the root namespace based on the position of the type of class directory.
      *
@@ -1783,12 +2076,13 @@ trait SharedMethods
      * Get the base name of the class.
      *
      * @param string|null $type
+     * @param string|null $class
      * @return string
      */
-    protected function getClassBaseName($type = null)
+    protected function getClassBaseName($type = null, $class = null)
     {
         $suffix = $this->getSuffix($type ?: $this->type);
-        $class = $this->getClass();
+        $class = $class ?? $this->getClass();
 
         // Extract the class name from the input
         $className = class_basename($class);
