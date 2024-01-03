@@ -4,15 +4,22 @@ namespace LaravelSimpleModule\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use LaravelSimpleModule\AssistCommand;
+use Illuminate\Contracts\Console\PromptsForMissingInput;
+use LaravelSimpleModule\Commands\SharedMethods;
 
-class MakeViewCommand extends Command
+class MakeViewCommand  extends Command implements PromptsForMissingInput
 {
+    use AssistCommand, 
+        SharedMethods;
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
     protected $signature = 'make:view {name : The name of the file}';
+
+    protected $type = 'View';
 
     /**
      * The console command description.
@@ -42,7 +49,8 @@ class MakeViewCommand extends Command
 
         File::put($path, File::get($this->getStub()));
 
-        $this->info('View created successfully.');
+        $this->printInfo($view, $this->type, $path);
+        // $this->info('View created successfully.');
     }
 
     /**

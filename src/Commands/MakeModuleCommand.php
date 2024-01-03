@@ -107,7 +107,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         $this->appComponents = Change::case($this->applicationComponents, 'lower');
         // $this->appComponents = Change::case($this->handleChoices('Select components to include', $this->applicationComponents), 'lower');
 
-        $commandType = CommandType::SYMFONY;
+        $commandType = CommandType::ARTISAN;
         $commands = [];
 
         foreach ($this->appComponents as $component) {
@@ -123,6 +123,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 '--migration' => in_array($model, $migration) ? true : false,
                 '--factory' => in_array($model, $factory) ? true : false,
                 '--seed' => in_array($model, $seeder) ? true : false,
+                '--trait' => true,
                 '--path' => $namespacedModel //TODO: Fix path option
             ]);
 
@@ -162,12 +163,12 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 // Add make controller command with options
                 $commandOptions = array_filter([
                     'name' => $this->getNamespace() . "\\Http/Controllers/$layerName/{$model}{$layerName}Controller",
-                    '--model' => $namespacedModel,
+                    '--model' => !$this->isClassFileCreated($namespacedModel) ? $namespacedModel : false,
                     '--api' => $layer == 'api' ? true : false,
                     '--requests' => in_array($model, $request) ? true : false,
-                    '--repository' => in_array($model, $repository) ? true : false,
-                    '--service' => in_array($model, $service) ? true : false,
-                    '--policy' => in_array($model, $policy) ? true : false,
+                    '--repository' => in_array($model, $repository) ?  $this->getNamespace() . "\\Repositories\\{$model}{$layerName}Repository" : false,
+                    '--service' => in_array($model, $service) ? $this->getNamespace() . "\\Services\\{$model}{$layerName}Service" : false,
+                    '--policy' => in_array($model, $policy) ? $this->getNamespace() . "\\Policies\\{$model}{$layerName}Policy" : false,
                     '--views' => $layer !== 'api' && in_array($model, $view) ? true : false,
                 ]);
 
@@ -197,16 +198,19 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
 
         $this->bar->start();
 
-        $this->exec($commands);
-
+        // $this->exec($commands);
+        // $result =  $this->exec($commands/*, function ($results) {
+        //     return $results;
+        // }*/);
+        // dd($commands);
         // $process = new AsyncCommand($commands);
         // $process->run();
 
-        // foreach ($commands as $key => $command) {
-        //     Artisan::call($command[0], $command[1]);
-        //     $this->bar->advance();
-        //     sleep(1);
-        // }
+        foreach ($commands as $key => $command) {
+            $this->call($command[0], $command[1]);
+            $this->bar->advance();
+            sleep(1);
+        }
 // $process = new Process(['ls', '-lsa']);
 // $process->start();
 

@@ -1118,6 +1118,47 @@ trait SharedMethods
     }
 
     /**
+     * Get the qualified instance.
+     *
+     * @param string $name
+     * @param string|null $type The target type for conversion (e.g., 'Model', 'Service', etc.).
+     * @return string The converted class.
+     */
+    protected function qualifyInstance($name, $type = null)
+    {
+        // When option is not provided
+        if(is_bool($name) && !$name) {
+            return $name;
+        }
+
+        $normalizedType = $this->toPascalSingular($type ?: $name);
+        $class = $this->getClassBaseName($normalizedType);
+        $class = $this->removeLast($class, ['Repository', 'Service']);
+        // $class = class_basename($this->getModelClass());
+        $namespace = $this->getQualifiedNamespace($normalizedType);
+        $suffix = $this->getSuffix($normalizedType);
+        $class .= $suffix;
+
+        if ($normalizedType == 'Model') {
+            $class = $this->removeLast($class, ['Api', 'Backend', 'Frontend', 'Model']);
+        }
+        
+        // When option is expected, but name is not provided
+        if(is_null($name)) {
+            $name = "{$namespace}\\{$class}";
+        }
+
+        // When option is expected, but name is provided
+        if(is_string($name)) {
+            $name = $this->getQualifiedClass($name, $normalizedType);
+        }
+
+
+        return $name;
+
+    }
+
+    /**
      * Simplified method for handling choices and default values.
      *
      * @param string $question
