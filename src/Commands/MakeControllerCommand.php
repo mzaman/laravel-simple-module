@@ -19,8 +19,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
     public function handle()
-    {
-
+    { 
         if (!$this->isAvailable() || parent::handle() === false) {
             $this->handleAvailability();
         }
@@ -142,8 +141,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildServiceReplacements(array $replace)
     {
-        $serviceClass = $this->parseModel($this->qualifyOption('service'));
-
+        $serviceClass = $this->parseModel($this->qualifyOption('service')); 
         $serviceClass = $this->generateService($serviceClass);
 
         return array_merge($replace, [
@@ -183,10 +181,11 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function createService($serviceClass)
     {
-        $this->call('make:service', [
+        $this->call('make:service', array_filter([
             'name' => $serviceClass,
-            "--model" => $this->option("model")
-        ]);
+            "--model" => $this->option("model"),
+            "--api" => $this->option("api"),
+        ]));
     }
 
     /**
@@ -306,7 +305,7 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildViewsReplacements(array $replace)
     {
-        $controller = strtolower(Str::studly($this->getBaseClassName()));
+        $controller = strtolower(Str::snake($this->getBaseClassName()));
         $viewPath = str_replace('/', '.', $controller);
 
         return array_merge($replace, [
@@ -365,7 +364,7 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createViews()
     {
         $views = ['index', 'create', 'show', 'edit'];
-        $controller = strtolower(Str::studly($this->getBaseClassName()));
+        $controller = strtolower(Str::snake($this->getBaseClassName()));
 
         foreach ($views as $view) {
             $this->call('make:view', [
