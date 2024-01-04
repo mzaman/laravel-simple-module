@@ -90,8 +90,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
      * @return int
      */
     public function handle()
-    {
-
+    { 
         // Ask for module name
         $this->module = $this->getSingularClassName($this->argument('name'));
 
@@ -163,7 +162,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 // Add make controller command with options
                 $commandOptions = array_filter([
                     'name' => $this->getNamespace() . "\\Http/Controllers/$layerName/{$model}{$layerName}Controller",
-                    '--model' => !$this->isClassFileCreated($namespacedModel) ? $namespacedModel : false,
+                    // '--model' => !$this->entityExists($namespacedModel) ? $namespacedModel : false,
                     '--api' => $layer == 'api' ? true : false,
                     '--requests' => in_array($model, $request) ? true : false,
                     '--repository' => in_array($model, $repository) ?  $this->getNamespace() . "\\Repositories\\{$model}{$layerName}Repository" : false,
@@ -210,42 +209,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
             $this->call($command[0], $command[1]);
             $this->bar->advance();
             sleep(1);
-        }
-// $process = new Process(['ls', '-lsa']);
-// $process->start();
-
-// while ($process->isRunning()) {
-//     // waiting for process to finish
-// }
-
-// echo $process->getOutput();
-
-        // foreach ($commands as $key => $command) {
-        //     echo $this->toCommandString($command) . "\n\n";
-        //     $this->info("Executing command: " . $command[0]);
-
-        //     // Execute the command and check for success
-        //     $exitCode = $this->call($command[0], $command[1]);
-
-        //     if ($exitCode !== 0) {
-        //         $this->error("Command failed: " . $command[0]);
-        //         return $exitCode;
-        //     }
-
-        //     $this->bar->advance();
-        //     // sleep(1);
-        // }
-        // $this->makeModels();
-        // $this->makeSeeders($seederModels);
-        // $this->makeFactories($factoryModels);
-        // $this->makePolicies($policyModels);
-        // $this->makeControllers($controllerModels);
-        // $this->makeRepositories($serviceModels);
-        // $this->makeServices($serviceModels);
-        // $this->makeEvents();
-        // $this->makeRequests();
-        // $this->makeListeners();
-        // $this->makeMigrations($migrationModels);
+        } 
 
         $this->bar->finish();
 

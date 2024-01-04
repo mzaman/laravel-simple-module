@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use LaravelSimpleModule\AssistCommand;
 use LaravelSimpleModule\CreateFile;
+use LaravelSimpleModule\Constants\CommandType;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use LaravelSimpleModule\Commands\SharedMethods;
 use File;
@@ -44,6 +45,7 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      */
     public function handle()
     {
+
         // $classBaseName = $this->getClassBaseName();
         $other = $this->option("other");
 
@@ -53,7 +55,7 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         // First we create the repository interface in the interfaces directory
         // This will be implemented by the interface class
         $this->createInterface();
-            $this->create(!$other);
+        $this->create(!$other);
 
         if ($this->option('service')) {
             $this->createService();
@@ -88,12 +90,17 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
         $model = $this->parseModelNamespaceAndClass($this->option("model"));
         $namespacedModel = $model['namespace'] . '\\' . $model['class'];
 
-        if (! class_exists($namespacedModel) && $this->confirm("A {$namespacedModel} model does not exist. Do you want to generate it?", true)) {
-            $this->call('make:model', [
+        if (! $this->entityExists($namespacedModel) && $this->confirm("A {$namespacedModel} model does not exist. Do you want to generate it?", true)) {
+            $commandOptions = [
                 'name' => $namespacedModel,
                 '--path' => $namespacedModel,
                 '--trait' => true
-            ]);
+            ];
+
+            $this->call('make:model', $commandOptions);
+            // $command = $this->toCommandArgument([$this->getCommand('model'), $commandOptions], CommandType::SYMFONY);
+            // $this->asyncRun([$command], CommandType::SYMFONY);
+
         }
 
         $stubProperties = [
@@ -119,11 +126,13 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
                 $file,
                 $stubPath
             );
+            
+            $this->printInfo($class, $this->type, $namespace);
+            // $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
 
-            $info = "<fg=yellow>{$this->type} <fg=green>{$class}</> [{$namespacedClass}]";
+            // $path = $this->getPath($namespacedClass);
+            // $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
 
-            $path = $this->getPath($namespacedClass);
-            $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
             return $namespacedClass;
         } else {
             $this->handleAvailability($namespacedClass, $this->type);

@@ -19,7 +19,7 @@ trait SharedMethods
     protected $defaultClassPrefix = 'Default';
     protected $isFresh = true;
     protected $applicationLayers = ['Api', 'Backend', 'Frontend'];
-    protected $applicationComponents = ['Migration', 'Event', 'Controller', 'Middleware', 'Request', 'Listener', 'Repository', 'Service', 'Policy', 'Factory', 'Seeder', 'View'];
+    protected $applicationComponents = ['Migration', 'Event', 'Request', 'Listener', 'Repository', 'Service', 'Policy', 'Factory', 'Seeder', 'View'];
     /**
      * Prompt for missing input arguments using the returned questions.
      *
@@ -269,7 +269,7 @@ trait SharedMethods
 
                     // Check if the associated class file is created
                     $class = $classes[$key];
-                    // if (true || $this->isClassFileCreated($class)) 
+                    // if (true || $this->entityExists($class)) 
                     { // Fix $class array unset issue using another process
                         // echo "Removed: $class\n";
                         unset($classes[$key]);
@@ -338,20 +338,21 @@ trait SharedMethods
 
 
     /**
-     * Check if a class file is created.
+     * Check if an entity file is created.
      *
-     * @param string $class The class name.
+     * @param string $entity The entity name.
      *
-     * @return bool Whether the class file is created.
+     * @return bool Whether the entity file is created.
      */
-    protected function isClassFileCreated($class)
+    protected function entityExists($entity)
     {
-        $classPath = str_replace('\\', DIRECTORY_SEPARATOR, $class);
-        $classPath = app_path($classPath . '.php');
+        $entityPath = str_replace('\\', DIRECTORY_SEPARATOR, $entity);
+        $entityPath .= '.php';
+        // $entityPath = app_path($entityPath);
 
-        clearstatcache(true, $classPath);
+        clearstatcache(true, $entityPath);
 
-        return file_exists($classPath) && is_readable($classPath);
+        return file_exists($entityPath) && is_readable($entityPath);
     }
 
 
@@ -401,7 +402,7 @@ trait SharedMethods
         while ($elapsedTime <= $initialTimeout) {
             usleep(10000); // sleep for 10 milliseconds before checking again
 
-            if ($this->classFileExists($class)) {
+            if ($this->entityLoaded($class)) {
                 // The following code will be executed if the file is created within the timeout
                 $this->printInfo($class);
                 // return true; // Return true once the file is created
@@ -421,7 +422,7 @@ trait SharedMethods
      *
      * @return bool Whether the class file exists.
      */
-    protected function classFileExists($class)
+    protected function entityLoaded($class)
     {
         $exists = interface_exists($class) || trait_exists($class) || class_exists($class);
 
@@ -1280,7 +1281,7 @@ trait SharedMethods
     protected function exists($name = null, $type = null)
     {
         $name = $this->getQualifiedClass($name, $type);
-        return (interface_exists($name) || trait_exists($name) || class_exists($name)) ? $name : false;
+        return $this->entityLoaded($name) ? $name : false;
     }
 
 
@@ -1553,6 +1554,7 @@ trait SharedMethods
     protected function parseModelNamespaceAndClass($model = null) {
         $model = $model ?: $this->getNamespacedModel();
         $model = $this->removeLast($model, [!in_array($this->type, ['Model', 'Module']) ? $this->type : null, '\\Modules', 'Api', 'Backend', 'Frontend', 'Services', 'Repositories']);
+
         return $this->parseNamespaceAndClass($model);
     }
 
@@ -1639,6 +1641,7 @@ trait SharedMethods
     protected function getNamespacedModel($class = null)
     {
         $class = $class ?: $this->getNamespacedClass();
+
         // Get the root namespace based on the position of the type of class directory
         $modelNamespace = $this->getRootNamespace() . '\\Models\\';
         $modelVariable = $this->buildClassName($class);

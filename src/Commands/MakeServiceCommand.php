@@ -65,7 +65,7 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
         $repository = $this->getConvertedClass();
         $namespacedRepository = $this->parseNamespaceAndClass($repository); 
         
-        if (! class_exists($repository) && $this->confirm("A {$repository} repository does not exist. Do you want to generate it?", true)) {
+        if (! $this->entityExists($repository) && $this->confirm("A {$repository} repository does not exist. Do you want to generate it?", true)) {
             $this->createRepository();
         }
 

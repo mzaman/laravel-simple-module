@@ -110,7 +110,7 @@ class MakeControllerCommand extends ControllerMakeCommand
 
         // $modelClass = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
 
-        if (! class_exists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
+        if (! $this->entityExists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
             $this->call('make:model', [
                 'name' => $modelClass,
                 '--path' => $modelClass,
@@ -324,7 +324,7 @@ class MakeControllerCommand extends ControllerMakeCommand
         $model = $this->getQualifiedClass($this->getModelName()/*, 'Model'*/);
         $policy = $this->option('policy');
         $namespace = $this->getQualifiedNamespace('Policy');
-        if ($policy != '' && class_exists("{$namespace}\\{$policy}")) {
+        if ($policy != '' && $this->entityExists("{$namespace}\\{$policy}")) {
             return;
         }
 

@@ -49,7 +49,7 @@ class MakeViewCommand  extends Command implements PromptsForMissingInput
 
         File::put($path, File::get($this->getStub()));
 
-        $this->printInfo($view, $this->type, $path);
+        $this->printInfo($view, $this->type, $view);
         // $this->info('View created successfully.');
     }
 
