@@ -162,7 +162,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 // Add make controller command with options
                 $commandOptions = array_filter([
                     'name' => $this->getNamespace() . "\\Http/Controllers/$layerName/{$model}{$layerName}Controller",
-                    // '--model' => !$this->entityExists($namespacedModel) ? $namespacedModel : false,
+                    '--model' => $namespacedModel,
                     '--api' => $layer == 'api' ? true : false,
                     '--requests' => in_array($model, $request) ? true : false,
                     '--repository' => in_array($model, $repository) ?  $this->getNamespace() . "\\Repositories\\{$model}{$layerName}Repository" : false,
