@@ -206,6 +206,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         // $process->run();
 
         foreach ($commands as $key => $command) {
+            $this->line('');
             $this->call($command[0], $command[1]);
             $this->bar->advance();
             sleep(1);
