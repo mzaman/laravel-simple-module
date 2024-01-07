@@ -2165,6 +2165,34 @@ trait SharedMethods
     }
 
     /**
+     * Get the root pathname of view for class basename
+     *
+     * @param string|null $class
+     * @return string
+     */
+    protected function getViewPath($class = null)
+    {
+        $class = $class ?? $this->getBaseClassName();
+
+        // Split the remaining string into words
+        $words = array_filter(preg_split('/(?=[A-Z])/', $class));
+
+        // If there's only one word or the last word is not 'backend' or 'frontend', return the original string applicationLayers
+        if (count($words) === 1 || !in_array(strtolower(end($words)), ['backend', 'frontend'])) {
+            return lcfirst($class);
+        }
+
+        // Remove the last word from the array
+        $lastWord = array_pop($words);
+
+        // Move 'backend' or 'frontend' to the beginning of the array
+        array_unshift($words, lcfirst($lastWord));
+
+        // Convert the array back to a string, add dots between segments, and return
+        return str_replace('/', '.', strtolower(implode('.', $words)));
+    }
+
+    /**
      * Get the path with the name of the class without the controller suffix.
      *
      * @return string

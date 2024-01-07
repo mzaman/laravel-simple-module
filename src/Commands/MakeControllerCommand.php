@@ -304,9 +304,8 @@ class MakeControllerCommand extends ControllerMakeCommand
      * @return array
      */
     protected function buildViewsReplacements(array $replace)
-    {
-        $controller = strtolower(Str::snake($this->getBaseClassName()));
-        $viewPath = str_replace('/', '.', $controller);
+    { 
+        $viewPath = $this->getViewPath();
 
         return array_merge($replace, [
             'DummyViewPath' => $viewPath,
@@ -364,11 +363,11 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createViews()
     {
         $views = ['index', 'create', 'show', 'edit'];
-        $controller = strtolower(Str::snake($this->getBaseClassName()));
-
+        $viewPath = $this->getViewPath();
+        
         foreach ($views as $view) {
             $this->call('make:view', [
-                'name' => "{$controller}/{$view}",
+                'name' => "{$viewPath}/{$view}",
             ]);
         }
     }
