@@ -19,7 +19,7 @@ class DummyClass extends Controller
      * @param DummyFullServiceClass $service
      * @return void
      */
-    public function __construct(DummyFullServiceClass $service)
+    public function __construct(DummyServiceClass $service)
     {
         // Inject the service dependency into the controller
         $this->service = $service;

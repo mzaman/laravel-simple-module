@@ -216,7 +216,8 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
 
         $this->newLine();
         $this->info('Scaffolding generated successfully!');
-
+        
+        // system('composer dump-autoload -o');
         return Command::SUCCESS;
     }
 
