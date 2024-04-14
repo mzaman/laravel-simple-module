@@ -47,6 +47,7 @@ trait SharedMethods
 
         $hasNamespace = $this->hasNamespace($name);
         list($namespace, $class) = array_values($this->parseNamespaceAndClass($name));
+
         switch (true) {
             // Case 1: name argument contains namespace, path not provided
             case $hasNamespace && empty($path):
@@ -76,12 +77,14 @@ trait SharedMethods
                 $fullPath = $this->getDefautPath();
                 break;
         }
-
-        return [
+        
+        $result = [
             'namespace' => $this->getNamespaceFromPath($namespace),
             'class' => $this->getSingularClassName($class),
             'path' => $this->getPathFromNamespace($fullPath),
         ];
+
+        return $result;
     }
 
     protected function hasNamespace($class) {
@@ -2239,6 +2242,7 @@ trait SharedMethods
     {
         // Normalize paths for comparison
         $namespace = realpath($namespace);
+        $namespace = Str::replaceLast('app', 'App', $namespace);
         $laravelPath = realpath($rootPath ?: $this->laravelPath());
         $laravelPath = Str::replaceLast('app', 'App', $laravelPath);
 
@@ -2321,8 +2325,6 @@ trait SharedMethods
     private function getNamespacedClass()
     {
         return $this->getNamespace() . '\\' . $this->getClass();
-
-
     }
 
     /**
