@@ -459,11 +459,10 @@ trait SharedMethods
     protected function createModelTraits()
     {
         $traitCommands = $this->getModelTraitCommands(CommandType::SYMFONY);
-        // dd($traitCommands);
-        return $this->asyncRun($traitCommands);
-        // return $this->exec($traitCommands/*, function ($results) {
-        //     return $results;
-        // }*/);
+        // return $this->asyncRun($traitCommands);
+        return $this->exec($traitCommands, function ($results) {
+            return $results;
+        });
     } 
     
     /**
