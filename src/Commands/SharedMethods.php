@@ -42,7 +42,7 @@ trait SharedMethods
     */
     protected function getChoices()
     {
-        $name = $this->getQualifedNameInput();
+        $name = $this->getQualifiedNameInput();
         $path = $this->option('path');
 
         $hasNamespace = $this->hasNamespace($name);
@@ -459,6 +459,7 @@ trait SharedMethods
     protected function createModelTraits()
     {
         $traitCommands = $this->getModelTraitCommands(CommandType::SYMFONY);
+        // dd($traitCommands);
         return $this->asyncRun($traitCommands);
         // return $this->exec($traitCommands/*, function ($results) {
         //     return $results;
@@ -474,8 +475,9 @@ trait SharedMethods
      */
     protected function getModelTraitCommands($commandType = CommandType::SYMFONY)
     {
-        $model = $this->parseModelNamespaceAndClass($this->option("path")); //TODO: Fix empty path issue
-
+        $namespacedModel = $this->getQualifiedNamespacedInput();
+        $model = $this->parseModelNamespaceAndClass($namespacedModel);
+        // dd($namespacedModel);
         $namespace = $model['namespace'];
         $class = $model['class'];
 
@@ -491,7 +493,7 @@ trait SharedMethods
             $traitClass = "{$namespace}\\Traits\\{$traitType}\\{$class}{$traitType}";
 
             $commandOptions = array_filter([
-                'name' => $traitClass,
+                'name' => str_replace('\\', '/', $traitClass),
                 '--force' => $this->isAvailable($traitClass) ? true : false,
             ]);
 
@@ -1933,10 +1935,11 @@ trait SharedMethods
      *
      * @return string
      */
-    protected function getQualifedNameInput()
+    protected function getQualifiedNameInput()
     {
         $name = $this->getNameInput();
         $name = ltrim($name, '\\/');
+        // return $name;
         return str_replace('/', '\\', $name);
     }
 
@@ -1948,6 +1951,74 @@ trait SharedMethods
     protected function getNameInput()
     {
         return trim($this->argument('name'));
+    }
+
+    /**
+     * Normalize a path to use the system's directory separator and trim unnecessary characters.
+     *
+     * @param string $path The path to normalize.
+     * @return string The normalized path.
+     */
+    protected function getQualifiedPath($path)
+    {
+        // Trim leading and trailing backslashes and forward slashes
+        $path = trim($path, '\\/');
+
+        // Replace forward slashes and backslashes with the system's directory separator
+        return str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+    }
+
+    /**
+     * Retrieve and normalize the path input from the 'path' option.
+     *
+     * @return string The normalized path option.
+     */
+    protected function getQualifiedPathInput()
+    {
+        // Retrieve the 'path' option value
+        $path = $this->getPathInput();
+
+        // Normalize the path using the getQualifiedPath method
+        return $this->getQualifiedPath($path);
+    }
+
+    /**
+     * Retrieve and trim the path input from the 'path' option.
+     *
+     * @return string The trimmed path input.
+     */
+    protected function getPathInput()
+    {
+        // Retrieve the 'path' option and trim any leading or trailing whitespace
+        return trim($this->option('path'));
+    }
+    
+
+    /**
+     * Construct the fully qualified namespaced class from the provided path and name input.
+     *
+     * @return string The fully qualified namespaced class.
+     */
+    protected function getQualifiedNamespacedInput()
+    {
+        $nameInput = $this->getNameInput();
+        $pathInput = $this->getPathInput();
+
+        // Determine if the name input is already fully qualified (contains namespace)
+        $isNamespaced = Str::contains($nameInput, '\\') || Str::contains($nameInput, DIRECTORY_SEPARATOR);
+
+        if ($pathInput && $isNamespaced) {
+            // Combine the path and the basename of the namespaced name
+            $qualifiedPath = $this->getQualifiedPath($pathInput);
+            return $this->getQualifiedClass($qualifiedPath . DIRECTORY_SEPARATOR . class_basename($nameInput));
+        } elseif ($pathInput) {
+            // Combine the path and the name input using DIRECTORY_SEPARATOR
+            $qualifiedPath = $this->getQualifiedPath($pathInput);
+            return $this->getQualifiedClass(rtrim($qualifiedPath, '\\/') . DIRECTORY_SEPARATOR . ltrim($nameInput, '\\/'));
+        }
+
+        // If no path is provided, normalize and return the name input directly
+        return $this->getQualifiedClass($this->getQualifiedNameInput());
     }
 
     /**
@@ -2001,7 +2072,8 @@ trait SharedMethods
         $class = ltrim($class, '\\/');
         $class = str_replace('/', '\\', $class);
         $class = implode('\\', $this->parseNamespaceAndClass($class, $type));
-        return $class;
+        // return $class;
+        return $this->qualifyClass($class);
     }
 
     /**
