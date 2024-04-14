@@ -2240,6 +2240,7 @@ trait SharedMethods
         // Normalize paths for comparison
         $namespace = realpath($namespace);
         $laravelPath = realpath($rootPath ?: $this->laravelPath());
+        $laravelPath = Str::replaceLast('app', 'App', $laravelPath);
 
         // Check if the given namespace is within the Laravel path
         if (Str::startsWith($namespace, $laravelPath)) {
