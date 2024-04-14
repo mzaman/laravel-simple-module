@@ -123,7 +123,7 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                 '--factory' => in_array($model, $factory) ? true : false,
                 '--seed' => in_array($model, $seeder) ? true : false,
                 '--trait' => true,
-                '--path' => $namespacedModel //TODO: Fix path option
+                '--path' => $this->getModelNamespace()
             ]);
 
             $command = $this->toCommandArgument([$this->getCommand('model'), $commandOptions], $commandType);
