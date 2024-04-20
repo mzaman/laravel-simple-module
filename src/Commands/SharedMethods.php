@@ -118,7 +118,7 @@ trait SharedMethods
      */
     private function toPascal($str)
     {
-       return Str::studly(Str::lower($str));
+       return Str::studly($str);
     }
 
     /**
@@ -2334,35 +2334,38 @@ trait SharedMethods
 
     /**
      * Get the pluralized pascal name.
-     * @param $path
+     * @param $string
      *
      * @return string
      */
-    protected function toPascalPlural($name)
+    protected function toPascalPlural($string)
     {
-        return Str::studly(Pluralizer::plural(Str::lower($name)));
+        return Str::studly(Pluralizer::plural(Str::lower($string)));
     }
     
     /**
      * Get the lower singularized name.
-     * @param $path
+     * @param $string
      *
      * @return string
      */
-    protected function toLowerSingular($name)
+    protected function toLowerSingular($string)
     {
-        return Pluralizer::singular(Str::lower($name));
+        return Pluralizer::singular(Str::lower($string));
     }
 
     /**
      * Get the singular pascal name.
-     * @param $path
+     * @param $string
      *
      * @return string
      */
-    protected function toPascalSingular($name)
+    protected function toPascalSingular($string)
     {
-        return Str::studly(Pluralizer::singular(Str::lower($name)));
+
+        $formatted = Str::studly(Str::singular(str_replace(['_', '-', ' '], '', $string)));
+        
+        return $formatted;
     }
 
     /**
