@@ -3,6 +3,7 @@
 namespace LaravelSimpleModule\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use LaravelSimpleModule\AssistCommand;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
@@ -61,6 +62,7 @@ class MakeViewCommand  extends Command implements PromptsForMissingInput
      */
     protected function getPath($view)
     {
+        // $view = Str::snake($view);
         $file = str_replace('.', '/', $view).'.blade.php';
 
         $path = 'resources/views/'.$file;

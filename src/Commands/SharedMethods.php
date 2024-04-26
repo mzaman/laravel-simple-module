@@ -116,9 +116,9 @@ trait SharedMethods
      * @param string $str
      * @return string
      */
-    private function toPascal($str)
+    private function toPascal($string)
     {
-       return Str::studly($str);
+        return Str::studly(str_replace(['_', '-', ' '], '', Str::studly($string)));
     }
 
     /**
@@ -2239,19 +2239,38 @@ trait SharedMethods
     }
 
     /**
-     * Get the root pathname of view for class basename
+     * Get the class name of the model.
      *
-     * @param string|null $class
-     * @return string
+     * @param string|null $modelOption The model option string.
+     * @return string The class name of the model.
+     */
+    protected function getModelClassName($modelOption = null)
+    {
+        // Determine the model to use, either from the provided option or default model class
+        $model = $this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass();
+        
+        // Extract the class name of the model
+        return class_basename($model);
+    }
+
+    /**
+     * Get the root pathname of the view for the class basename.
+     *
+     * @param string|null $class The class name.
+     * @return string The view path.
      */
     protected function getViewPath($class = null)
     {
+        // If $class is not provided, use the base class name
         $class = $class ?? $this->getBaseClassName();
 
-        // Split the remaining string into words
-        $words = array_filter(preg_split('/(?=[A-Z])/', $class));
+        // Split the class name into words based on uppercase letters
+        $words = preg_split('/(?=[A-Z])/', $class);
 
-        // If there's only one word or the last word is not 'backend' or 'frontend', return the original string applicationLayers
+        // Remove empty elements
+        $words = array_filter($words);
+
+        // If there's only one word or the last word is not 'backend' or 'frontend', return the original string
         if (count($words) === 1 || !in_array(strtolower(end($words)), ['backend', 'frontend'])) {
             return lcfirst($class);
         }
@@ -2362,10 +2381,7 @@ trait SharedMethods
      */
     protected function toPascalSingular($string)
     {
-
-        $formatted = Str::studly(Str::singular(str_replace(['_', '-', ' '], '', $string)));
-        
-        return $formatted;
+        return Str::studly(Str::singular(str_replace(['_', '-', ' '], '', Str::studly($string))));
     }
 
     /**

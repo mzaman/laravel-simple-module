@@ -108,7 +108,7 @@ class MakeControllerCommand extends ControllerMakeCommand
     {
         $modelClass = $this->parseModel($this->qualifyOption('model'));
 
-        // $modelClass = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
+        // $modelClass = $this->getModelClassName();
 
         if (! $this->entityExists($modelClass) && $this->components->confirm("A {$modelClass} model does not exist. Do you want to generate it?", true)) {
             $this->call('make:model', [
@@ -241,17 +241,18 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function generateFormRequests($modelClass, $storeRequestClass, $updateRequestClass)
     {
 
-        $namespace = $this->getQualifiedNamespace('Request');
+        $modelClass = class_basename($modelClass);
+        $namespace = $this->getQualifiedNamespace('Request') . "\\{$modelClass}";
 
         // $namespace = 'App\Http\Requests';
-        $storeRequestClass = 'Store'.class_basename($modelClass).'Request';
+        $storeRequestClass = 'Store' . $modelClass . 'Request';
 
         $this->createRequest("{$namespace}\\{$storeRequestClass}");
         // $this->call('make:request', [
         //     'name' => "{$namespace}\\{$storeRequestClass}",
         // ]);
 
-        $updateRequestClass = 'Update'.class_basename($modelClass).'Request';
+        $updateRequestClass = 'Update' . $modelClass . 'Request';
 
         $this->createRequest("{$namespace}\\{$updateRequestClass}");
         // $this->call('make:request', [
@@ -268,10 +269,10 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildRequestsReplacements(array $replace)
     {
-        $modelClass = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
+        $modelClass = $this->getModelClassName();
         // $controller = Str::studly($this->getBaseClassName());
 
-        $requestNamespace = $this->getQualifiedNamespace('Request');
+        $requestNamespace = $this->getQualifiedNamespace('Request') . "\\{$modelClass}";
         // $requestPath = str_replace('/', '\\', $controller);
 
         if ($this->option('requests')) {
@@ -305,12 +306,37 @@ class MakeControllerCommand extends ControllerMakeCommand
      */
     protected function buildViewsReplacements(array $replace)
     { 
-        $viewPath = $this->getViewPath();
+        $viewPath = $this->getViewPathFromOption();
 
         return array_merge($replace, [
             'DummyViewPath' => $viewPath,
         ]);
     }
+    
+    /**
+     * Build the views replacement values.
+     *
+     * @return string
+     */
+    protected function getViewPathFromOption()
+    { 
+        $option = $this->option('views');
+        switch (true) {
+            case is_bool($option) :
+                $viewPath = $this->getViewPath();
+                break;
+            case is_string($option) && Str::contains($option, ['/', '.']) :
+                $viewPath = $option;
+                break;
+            default:
+                $viewPath = $this->getViewPath();
+                break;
+        }
+        
+        return str_replace('/', '.', $viewPath);
+    }
+
+    
 
     /**
      * Create a policy for the model.
@@ -342,9 +368,8 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createRequests()
     {
         $requests = ['Store', 'Edit', 'Delete', 'Update'];
-        $namespace = $this->getQualifiedNamespace('Request');
-        
-        $model = class_basename($this->qualifyOption('model') ? $this->parseModel($this->qualifyOption('model')) : $this->getModelClass());
+        $model = $this->getModelClassName();
+        $namespace = $this->getQualifiedNamespace('Request') . "\\{$model}";
 
         // $model = Str::studly($this->getModelClass()); 
 
@@ -363,7 +388,7 @@ class MakeControllerCommand extends ControllerMakeCommand
     protected function createViews()
     {
         $views = ['index', 'create', 'show', 'edit'];
-        $viewPath = $this->getViewPath();
+        $viewPath = $this->getViewPathFromOption();
         
         foreach ($views as $view) {
             $this->call('make:view', [
@@ -438,7 +463,7 @@ class MakeControllerCommand extends ControllerMakeCommand
 
             ['requests', 'R', InputOption::VALUE_NONE, 'Create new request classes'],
 
-            ['views', null, InputOption::VALUE_NONE, 'Create new view files if the controller is not for the API'],
+            ['views', 'vp', InputOption::VALUE_OPTIONAL, 'Create new view files if the controller is not for the API', false],
 
             ['repository', 'rt', InputOption::VALUE_OPTIONAL, 'Create a new repository file for the model', false],
 

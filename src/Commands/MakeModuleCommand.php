@@ -115,7 +115,9 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
         }
         
         foreach ($this->models as $model) {
+            $model = $this->toPascalSingular($model);
             $namespacedModel = $this->getModelNamespace() . '\\' . $model;
+
             // Add make model command with options
             $commandOptions = array_filter([
                 'name' => $namespacedModel,
@@ -167,8 +169,8 @@ class MakeModuleCommand extends Command implements PromptsForMissingInput
                     '--requests' => in_array($model, $request) ? true : false,
                     '--repository' => in_array($model, $repository) ?  $this->getNamespace() . "\\Repositories\\{$model}{$layerName}Repository" : false,
                     '--service' => in_array($model, $service) ? $this->getNamespace() . "\\Services\\{$model}{$layerName}Service" : false,
-                    '--policy' => in_array($model, $policy) ? $this->getNamespace() . "\\Policies\\{$model}{$layerName}Policy" : false,
-                    '--views' => $layer !== 'api' && in_array($model, $view) ? true : false,
+                    '--policy' => in_array($model, $policy) ? $this->getNamespace() . "\\Policies\\{$model}\\{$model}{$layerName}Policy" : false,
+                    '--views' => $layer !== 'api' && in_array($model, $view) ? Str::kebab($layer) . DIRECTORY_SEPARATOR . Str::kebab(class_basename($this->module)) . DIRECTORY_SEPARATOR .Str::kebab(class_basename($model)) : false,
                 ]);
 
                 $command = $this->toCommandArgument([$this->getCommand('controller'), $commandOptions], $commandType);
