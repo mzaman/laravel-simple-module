@@ -233,7 +233,7 @@ trait SharedMethods
             "{{ interface }}" => $class
         ];
 
-        $parent = $this->option('parent');  
+        $parent = $this->hasOption('parent') ? $this->option('parent') : null;  
         if ($parent) {
             $stubProperties["{{ parent }}"] = $parent;
         }
@@ -1419,8 +1419,9 @@ trait SharedMethods
         }
 
         // If parent or interface option is provided, and a stub path is set, use nested stub
-        $parentOption = $this->option('parent');
-        $interfaceOption = $this->option('interface');
+        $parentOption = $this->hasOption('parent') ? $this->option('parent') : null;
+        $interfaceOption = $this->hasOption('interface') ? $this->option('interface') : null;
+        
         if (($parentOption || $interfaceOption) && $this->stubPath) {
             // Check if both parent and interface options are provided
             if ($parentOption && $interfaceOption) {

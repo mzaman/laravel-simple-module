@@ -10,7 +10,7 @@ With easy repository, you can have the power of the repository pattern, without 
 
 You can install the package via composer for latest version
 ```bash
-$ composer require mzaman/laravel-simple-module
+composer require mzaman/laravel-simple-module
 ```
 
 
