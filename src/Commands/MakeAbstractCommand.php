@@ -7,7 +7,7 @@ use LaravelSimpleModule\AssistCommand;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use LaravelSimpleModule\Commands\SharedMethods;
 
-class MakeAbstractClassCommand extends Command implements PromptsForMissingInput
+class MakeAbstractCommand extends Command implements PromptsForMissingInput
 {
 
     use AssistCommand,
