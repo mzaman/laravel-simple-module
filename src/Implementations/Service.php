@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelSimpleModule;
+namespace LaravelSimpleModule\Implementations;
 
 use Exception;
 

@@ -21,6 +21,8 @@ class MakeInterfaceCommand extends Command implements PromptsForMissingInput
     protected $signature = 'make:interface 
                             {name : The name of the Interface}
                             {--path= : Where the Interface should be created}
+                            {--stub= : Use stub for interface creation}
+                            {--parent= : The parent interface to extend}
                             {--force : Create the interface even if the interface already exists}';
 
     /**
@@ -43,6 +45,9 @@ class MakeInterfaceCommand extends Command implements PromptsForMissingInput
      */
     public function handle()
     {
+        // Set the stub path based on the provided option or use default if not provided
+        $this->stubPath = $this->getStubPath();
+
         // Create the directory structure and generate relevant files
         $this->checkIfRequiredDirectoriesExist();
 
@@ -53,4 +58,5 @@ class MakeInterfaceCommand extends Command implements PromptsForMissingInput
         // $this->create();
 
     }
+
 }

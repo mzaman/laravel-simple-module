@@ -3,6 +3,11 @@
 return [ 
 
     /**
+     * Interface base name
+     */
+    "interface_base_name" => "Base",
+
+    /**
      * Interface name suffix
      */
     "interface_suffix" => "Interface",

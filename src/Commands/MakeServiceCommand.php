@@ -32,9 +32,9 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
      * @var string
      */
     protected $type = 'Service';
-    protected $interfaceStubPath = __DIR__ . '/stubs/service-interface.stub';
+    protected $interfaceStubPath = __DIR__ . '/stubs/service.interface.stub';
     protected $stubPath = __DIR__ . '/stubs/service.stub';
-    protected $apiStubPath = __DIR__ . '/stubs/service-api.stub';
+    protected $apiStubPath = __DIR__ . '/stubs/service.api.stub';
     
     public function handle()
     { 

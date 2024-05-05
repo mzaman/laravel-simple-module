@@ -3,9 +3,9 @@
 namespace {{ namespace }};
 
 /**
- * Interface {{ class }}.
+ * Interface {{ interface }}.
  */
-interface {{ class }}
+interface {{ interface }}
 {
 
 }

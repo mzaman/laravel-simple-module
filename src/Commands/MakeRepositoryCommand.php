@@ -34,9 +34,9 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      * @var string
      */
     protected $type = 'Repository';
-    protected $interfaceStubPath = __DIR__ . '/stubs/repository-interface.stub';
-    protected $stubPath = __DIR__ . '/stubs/eloquent-repository.stub';
-    protected $customStubPath = __DIR__ . '/stubs/custom-repository.stub';
+    protected $interfaceStubPath = __DIR__ . '/stubs/repository.interface.stub';
+    protected $stubPath = __DIR__ . '/stubs/repository.eloquent.stub';
+    protected $customStubPath = __DIR__ . '/stubs/repository.custom.stub';
 
     /**
      * Handle the command

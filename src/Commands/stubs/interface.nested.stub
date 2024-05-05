@@ -1,0 +1,13 @@
+<?php
+
+namespace {{ namespace }};
+
+/**
+ * Interface {{ interface }}.
+ */
+interface {{ interface }} extends {{ parent }}
+{
+    
+    // Additional methods specific to {{ interface }}
+    // New methods for the service operations
+}

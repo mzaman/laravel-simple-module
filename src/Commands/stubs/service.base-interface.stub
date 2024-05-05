@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+
+/**
+ * Interface {{ interface }}.
+ */
+interface {{ interface }} extends {{ parent }}
+{
+    
+    // Additional methods specific to {{ interface }}
+    // New methods for the service operations
+}
+

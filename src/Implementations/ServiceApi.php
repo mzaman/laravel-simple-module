@@ -1,7 +1,7 @@
 <?php
 
 
-namespace LaravelSimpleModule;
+namespace LaravelSimpleModule\Implementations;
 
 use LaravelSimpleModule\Traits\ResultService;
 

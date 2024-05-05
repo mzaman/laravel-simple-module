@@ -56,7 +56,7 @@ trait SharedMethods
 
             // Case 2: name argument contains class name, path not provided
             case !$hasNamespace && empty($path):
-                $fullPath = $this->getDefautPath();
+                $fullPath = $this->getDefaultPath();
                 break;
 
             // Case 3: name argument contains namespace, path provided
@@ -72,9 +72,9 @@ trait SharedMethods
 
             default:
                 // Handle any other cases or provide default values if needed
-                $namespace = $this->getDefautlNamespace();
-                $class = $this->getDefautlClass();
-                $fullPath = $this->getDefautPath();
+                $namespace = $this->getDefaultNamespace();
+                $class = $this->getDefaultClass();
+                $fullPath = $this->getDefaultPath();
                 break;
         }
         
@@ -147,6 +147,55 @@ trait SharedMethods
         $this->ensureDirectoryExists($path);
     }
 
+
+
+    /**
+     * Create default interface and abstracts
+     *
+     * @return string
+     */
+    protected function ensureBaseClassesExist()
+    {
+        $commandType = CommandType::SYMFONY;
+        $stubs = [
+            'interface' => __DIR__ . '/stubs/base.interface.stub',
+            'repository' => __DIR__ . '/stubs/repository.base-interface.stub',
+            'service' => __DIR__ . '/stubs/service.base-interface.stub',
+        ];
+
+        $commands = [];
+        $parent = null;
+        foreach($stubs as $type => $stubPath) {
+            $namespace = $this->getDefaultNamespace($type);
+            $path = $this->getPathFromNamespace($namespace);
+            $class = $this->getDefaultBaseName($type);
+
+            $namespacedClass = $this->getDefaultNamespacedClass($type);
+
+            if($type == 'interface') {
+                $parent = $namespacedClass;
+            } else {
+                $class .= 'Interface';
+            }
+
+            $commandOptions = array_filter([
+                'name' => str_replace('\\', '/', $class),
+                '--path' => $path,
+                '--stub' => $stubPath,
+                '--parent' => $parent,
+                '--force' => $this->isAvailable($namespacedClass) ? true : false,
+            ]);
+
+            $command = $this->toCommandArgument([$this->getCommand('interface'), $commandOptions], $commandType);
+            array_push($commands, $command);
+        }
+        
+        $this->exec($commands, function ($results) {
+            // var_dump($results);
+            return $results;
+        });
+    }
+
     /**
      * Create trait
      * @param string|bool|null $suffix
@@ -176,12 +225,18 @@ trait SharedMethods
             default:
         }
 
+        $namespacedClass = $namespace . "\\" . $class;
+
         $stubProperties = [
             "{{ namespace }}" => $namespace,
-            "{{ class }}" => $class
+            "{{ class }}" => $class,
+            "{{ interface }}" => $class
         ];
 
-        $namespacedClass = $namespace . "\\" . $class;
+        $parent = $this->option('parent');  
+        if ($parent) {
+            $stubProperties["{{ parent }}"] = $parent;
+        }
 
         if($this->isAvailable($namespacedClass)) {
 
@@ -476,7 +531,7 @@ trait SharedMethods
     {
         $namespacedModel = $this->getQualifiedNamespacedInput();
         $model = $this->parseModelNamespaceAndClass($namespacedModel);
-        // dd($namespacedModel);
+
         $namespace = $model['namespace'];
         $class = $model['class'];
 
@@ -1337,6 +1392,44 @@ trait SharedMethods
     }
 
     /**
+     * Get the stub file path.
+     *
+     * @return string|null
+     */
+    protected function getStubPath()
+    {
+        $stubOption = $this->option('stub');
+
+        // If stub option is provided, attempt to qualify the stub path
+        if ($stubOption) {
+            // Check if the provided stub option is a full file path
+            if (file_exists($stubOption)) {
+                return $stubOption;
+            }
+
+            // Check if the stub exists in the base path
+            if (file_exists(base_path("stubs/{$stubOption}"))) {
+                return base_path("stubs/{$stubOption}");
+            }
+
+            // Check if the stub exists in the default stubs directory
+            if (file_exists(__DIR__ . "/stubs/{$stubOption}")) {
+                return __DIR__ . "/stubs/{$stubOption}";
+            }
+        }
+
+        // If parent option is provided, and a stub path is set, use nested stub
+        $parentOption = $this->option('parent');
+        if (!$stubOption && $parentOption && $this->stubPath) {
+            return str_replace('.stub', '.nested.stub', $this->stubPath);
+        }
+
+        // Return null if no valid stub path is found
+        return $this->stubPath ?: null;
+    }
+
+
+    /**
      * Get interface file path
      * @param bool $isDefault
      * @param string|null $type
@@ -1612,7 +1705,7 @@ trait SharedMethods
     {
         $class = $class ?: $this->getNamespacedClass();
   
-        $type = $this->type ?: $this->getDefautlNamespace();
+        $type = $this->type ?: $this->getDefaultNamespace();
         $suffixes = $suffixes ?: ['Api', 'Backend', 'Frontend'];
 
         // Remove common suffixes like 'Api', 'Backend', 'Frontend' from the last part of the repository class name
@@ -1663,15 +1756,15 @@ trait SharedMethods
         // // Split the namespace by backslash ('\') into an array of segments
         // $namespaceSegments = explode('\\', $namespace);
 
-        // // Check if the first segment is $this->getDefautlNamespace()
-        // if (reset($namespaceSegments) === $this->getDefautlNamespace()) {
+        // // Check if the first segment is $this->getDefaultNamespace()
+        // if (reset($namespaceSegments) === $this->getDefaultNamespace()) {
         //     // If it is, return 'App\Models' as the model namespace
-        //     $modelNamespace = $this->getDefautlNamespace('Model');
+        //     $modelNamespace = $this->getDefaultNamespace('Model');
         // } else {
         //     $modelNamespace =  $rootNamespace . '\\Models';
         // }
 
-        // $type = $this->type ?: $this->getDefautlNamespace();
+        // $type = $this->type ?: $this->getDefaultNamespace();
 
         // // Remove common suffixes like 'Api', 'Backend', 'Frontend' from the last part of the repository class name
         // $modelVariable = class_basename($class);
@@ -1713,8 +1806,8 @@ trait SharedMethods
 
         $classType = $this->toPascalPlural($this->type);
 
-        // Check if the first segment is $this->getDefautlNamespace()
-        if (reset($namespaceSegments) === $this->getDefautlNamespace()) {
+        // Check if the first segment is $this->getDefaultNamespace()
+        if (reset($namespaceSegments) === $this->getDefaultNamespace()) {
             // If it is, return the default namespace
             if($classType == 'Services') {
                 $classNamespace = config('simple-module.repository_namespace') ?? 'App\\Repositories';
@@ -1811,6 +1904,32 @@ trait SharedMethods
     }
 
     /**
+     * get the class default base name from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    protected function getDefaultBaseName($type = null) {
+        $suffix = $this->getSuffix($type);
+        $name = config('simple-module-sys.interface_base_name') ?: 'Base';
+        return $name . $suffix;
+    }
+
+    /**
+     * get the class default namespaced base class from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    protected function getDefaultNamespacedClass($type = null) {
+        $namespace = $this->getDefaultNamespace($type);
+        $class = $this->getDefaultBaseName($type);
+        return $namespace . '\\' . $class;
+    }
+
+    /**
      * get the class suffix from type.
      *
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
@@ -1845,7 +1964,7 @@ trait SharedMethods
      *
      * @return string
      */
-    protected function getDefautlClass($type = null) {
+    protected function getDefaultClass($type = null) {
         $type = $type ?: $this->type;
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_class';
@@ -1859,7 +1978,7 @@ trait SharedMethods
      *
      * @return string
      */
-    protected function getDefautlNamespace($type = null) {
+    protected function getDefaultNamespace($type = null) {
         $type = $type ?: $this->type;
         $normalizedNamespace = $this->laravelNamespace() . ($this->isHttpType() ? 'Http\\' : null) . $this->toPascalPlural($type);
 
@@ -1889,7 +2008,7 @@ trait SharedMethods
      *
      * @return string
      */
-    protected function getDefautPath($type = null) {
+    protected function getDefaultPath($type = null) {
         $type = $type ?: $this->type;
         $normalizedPath = $this->laravelPath() . ($this->isHttpType() ? DIRECTORY_SEPARATOR . 'Http' . DIRECTORY_SEPARATOR : DIRECTORY_SEPARATOR) . $this->toPascalPlural($type);
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_directory';
@@ -2056,7 +2175,7 @@ trait SharedMethods
         }
 
         // Case 2: Name parameter contains only class name
-        $defaultNamespace = $this->getDefautlNamespace($type);
+        $defaultNamespace = $this->getDefaultNamespace($type);
 
         return [
             'namespace' => $defaultNamespace ?: '',
@@ -2144,7 +2263,7 @@ trait SharedMethods
         // Get the namespace slice based on the type
         $namespaceSlice = $this->namespaceSlice($class, [$normalizedType]);
         $class = $this->getNamespaceFromPath($namespaceSlice ?: $class);
-        $defaultNamespace = $this->getDefautlNamespace($type);
+        $defaultNamespace = $this->getDefaultNamespace($type);
 
         if($this->hasNamespace($class) && $class !== $defaultNamespace){
             $namespace = Str::start($class . '\\' . $normalizedType, $this->laravelNamespace());
@@ -2153,7 +2272,7 @@ trait SharedMethods
             return ucwords($defaultNamespace);
         }
 
-        // $namespace = $this->hasNamespace($class) ? $class . '\\' . $normalizedType : $this->getDefautlNamespace($type);
+        // $namespace = $this->hasNamespace($class) ? $class . '\\' . $normalizedType : $this->getDefaultNamespace($type);
 
         // $explode = explode('\\', $namespacedClass);
         // if (count($explode) > 1) {
