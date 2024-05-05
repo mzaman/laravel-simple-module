@@ -10,22 +10,61 @@ use LaravelSimpleModule\Interfaces\RepositoryInterface;
 abstract class Repository implements RepositoryInterface
 {
     /**
-     * Model instance.
+     * The repository model.
      *
-     * @var Model
+     * @var \Illuminate\Database\Eloquent\Model
      */
     protected $model;
 
     /**
-     * Eloquent constructor.
+     * The query builder.
      *
-     * @param Model $model
+     * @var \Illuminate\Database\Eloquent\Builder
      */
-    /*public function __construct(Model $model)
-    {
-        $this->model = $model;
-    }*/
+    protected $query;
 
+    /**
+     * Alias for the query limit.
+     *
+     * @var int
+     */
+    protected $take;
+
+    /**
+     * Array of related models to eager load.
+     *
+     * @var array
+     */
+    protected $with = [];
+
+    /**
+     * Array of one or more where clause parameters.
+     *
+     * @var array
+     */
+    protected $wheres = [];
+
+    /**
+     * Array of one or more where in clause parameters.
+     *
+     * @var array
+     */
+    protected $whereIns = [];
+
+    /**
+     * Array of one or more ORDER BY column/value pairs.
+     *
+     * @var array
+     */
+    protected $orderBys = [];
+
+    /**
+     * Array of scope methods to call on the model.
+     *
+     * @var array
+     */
+    protected $scopes = [];
+    
     /**
      * Find an item by id.
      *
@@ -34,10 +73,10 @@ abstract class Repository implements RepositoryInterface
      */
     public function find($id)
     {
-        return $this->model->find($id);
+        return $this->getById($id);
     }
 
-    /**
+     /**
      * Find an item by id or fail.
      *
      * @param mixed $id
@@ -45,27 +84,33 @@ abstract class Repository implements RepositoryInterface
      */
     public function findOrFail($id)
     {
-        return $this->model->findOrFail($id);
+        return $this->getByIdOrFail($id);
     }
-
+    
     /**
-     * Return all items.
+     * Get all the model records in the database.
      *
-     * @return \Illuminate\Database\Eloquent\Collection|null
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all()
     {
-        return $this->model->all();
+        $this->newQuery()->eagerLoad();
+
+        $models = $this->query->get();
+
+        $this->unsetClauses();
+
+        return $models;
     }
 
     /**
-     * Count the number of items.
+     * Count the number of specified model records in the database.
      *
      * @return int
      */
     public function count()
     {
-        return $this->model->count();
+        return $this->get()->count();
     }
 
     /**
@@ -87,13 +132,7 @@ abstract class Repository implements RepositoryInterface
      */
     public function createMultiple(array $data)
     {
-        $models = new Collection();
-
-        foreach ($data as $d) {
-            $models->push($this->create($d));
-        }
-
-        return $models;
+        return $this->model->insert($data);
     }
 
     /**
@@ -111,15 +150,18 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
-     * Delete an item by id.
+     * Delete the specified model record from the database.
      *
-     * @param mixed $id
+     * @param $id
+     * @return bool|null
+     *
+     * @throws \Exception
      */
     public function deleteById($id)
     {
         $this->unsetClauses();
 
-        return $this->getById($id)->delete();
+        return $this->getByIdOrFail($id)->delete();
     }
 
     /**
@@ -132,13 +174,29 @@ abstract class Repository implements RepositoryInterface
     {
         return $this->model->destroy($ids);
     }
-
+    
     /**
-     * Get the first item.
+     * Get the first specified model record from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return \Illuminate\Database\Eloquent\Model
      */
     public function first()
+    {
+        $this->newQuery()->eagerLoad()->setClauses()->setScopes();
+
+        $model = $this->query->first();
+
+        $this->unsetClauses();
+
+        return $model;
+    }
+
+    /**
+     * Get the first specified model record from the database or throw an exception if not found.
+     *
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function firstOrFail()
     {
         $this->newQuery()->eagerLoad()->setClauses()->setScopes();
 
@@ -150,9 +208,9 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
-     * Get all items.
+     * Get all the specified model records in the database.
      *
-     * @return \Illuminate\Database\Eloquent\Collection|null
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function get()
     {
@@ -166,10 +224,10 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
-     * Get an item by id.
+     * Get the specified model record from the database.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @param $id
+     * @return \Illuminate\Database\Eloquent\Model
      */
     public function getById($id)
     {
@@ -177,13 +235,43 @@ abstract class Repository implements RepositoryInterface
 
         $this->newQuery()->eagerLoad();
 
-        return $this->query->findOrFail($id);
+        return $this->query->find($id);
     }
 
     /**
-     * Limit the number of items.
+     * Find an item by id or fail.
      *
-     * @param int $limit
+     * @param mixed $id
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function getByIdOrFail($id)
+    {
+        $this->unsetClauses();
+
+        $this->newQuery()->eagerLoad();
+
+        return $this->query->findOrFail($id);
+    }
+    
+    /**
+     * @param $item
+     * @param $column
+     * @param  array  $columns
+     * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object|null
+     */
+    public function getByColumn($item, $column, array $columns = ['*'])
+    {
+        $this->unsetClauses();
+
+        $this->newQuery()->eagerLoad();
+
+        return $this->query->where($column, $item)->first($columns);
+    }
+    
+    /**
+     * Set the query limit.
+     *
+     * @param  int  $limit
      * @return $this
      */
     public function limit($limit)
@@ -194,10 +282,10 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
-     * Order the items.
+     * Set an ORDER BY clause.
      *
-     * @param string $column
-     * @param string $direction
+     * @param  string  $column
+     * @param  string  $direction
      * @return $this
      */
     public function orderBy($column, $direction = 'asc')
@@ -218,7 +306,7 @@ abstract class Repository implements RepositoryInterface
     {
         $this->unsetClauses();
 
-        $model = $this->getById($id);
+        $model = $this->getByIdOrFail($id);
 
         $model->update($data);
 
@@ -226,11 +314,29 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * @param  int  $limit
+     * @param  array  $columns
+     * @param  string  $pageName
+     * @param  null  $page
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function paginate($limit = 25, array $columns = ['*'], $pageName = 'page', $page = null)
+    {
+        $this->newQuery()->eagerLoad()->setClauses()->setScopes();
+
+        $models = $this->query->paginate($limit, $columns, $pageName, $page);
+
+        $this->unsetClauses();
+
+        return $models;
+    }
+
+    /**
      * Add a simple where clause to the query.
      *
-     * @param string $column
-     * @param mixed $value
-     * @param string $operator
+     * @param  string  $column
+     * @param  string  $value
+     * @param  string  $operator
      * @return $this
      */
     public function where($column, $value, $operator = '=')
@@ -243,13 +349,13 @@ abstract class Repository implements RepositoryInterface
     /**
      * Add a simple where in clause to the query.
      *
-     * @param string $column
-     * @param mixed $values
+     * @param  string  $column
+     * @param  mixed  $values
      * @return $this
      */
     public function whereIn($column, $values)
     {
-        $values = is_array($values) ? $values : array($values);
+        $values = is_array($values) ? $values : [$values];
 
         $this->whereIns[] = compact('column', 'values');
 
@@ -259,7 +365,7 @@ abstract class Repository implements RepositoryInterface
     /**
      * Set Eloquent relationships to eager load.
      *
-     * @param string|array $relations
+     * @param $relations
      * @return $this
      */
     public function with($relations)
@@ -318,7 +424,7 @@ abstract class Repository implements RepositoryInterface
             $this->query->orderBy($orders['column'], $orders['direction']);
         }
 
-        if (isset($this->take) && !is_null($this->take)) {
+        if (isset($this->take) and ! is_null($this->take)) {
             $this->query->take($this->take);
         }
 
@@ -346,9 +452,9 @@ abstract class Repository implements RepositoryInterface
      */
     protected function unsetClauses()
     {
-        $this->wheres = array();
-        $this->whereIns = array();
-        $this->scopes = array();
+        $this->wheres = [];
+        $this->whereIns = [];
+        $this->scopes = [];
         $this->take = null;
 
         return $this;
