@@ -1418,10 +1418,22 @@ trait SharedMethods
             }
         }
 
-        // If parent option is provided, and a stub path is set, use nested stub
+        // If parent or interface option is provided, and a stub path is set, use nested stub
         $parentOption = $this->option('parent');
-        if (!$stubOption && $parentOption && $this->stubPath) {
-            return str_replace('.stub', '.nested.stub', $this->stubPath);
+        $interfaceOption = $this->option('interface');
+        if (($parentOption || $interfaceOption) && $this->stubPath) {
+            // Check if both parent and interface options are provided
+            if ($parentOption && $interfaceOption) {
+                return str_replace('.stub', '.nested.interface.stub', $this->stubPath);
+            }
+            // Check if only parent option is provided
+            elseif ($parentOption) {
+                return str_replace('.stub', '.nested.stub', $this->stubPath);
+            }
+            // Check if only interface option is provided
+            elseif ($interfaceOption) {
+                return str_replace('.stub', '.interface.stub', $this->stubPath);
+            }
         }
 
         // Return null if no valid stub path is found

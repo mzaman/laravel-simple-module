@@ -32,6 +32,16 @@ return [
     "interface_namespace" => "App\Interfaces",
 
     /**
+     * The default directory for all the abstracts
+     */
+    "abstract_directory" => "app/Abstracts",
+
+    /**
+     * The default namespace for all the abstracts
+     */
+    "abstract_namespace" => "App\Abstracts",
+
+    /**
      * The default directory for all the models
      */
     "model_directory" => "app/Models",
