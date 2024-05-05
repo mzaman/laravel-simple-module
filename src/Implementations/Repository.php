@@ -10,6 +10,23 @@ use LaravelSimpleModule\Interfaces\RepositoryInterface;
 abstract class Repository implements RepositoryInterface
 {
     /**
+     * Model instance.
+     *
+     * @var Model
+     */
+    protected $model;
+
+    /**
+     * Eloquent constructor.
+     *
+     * @param Model $model
+     */
+    /*public function __construct(Model $model)
+    {
+        $this->model = $model;
+    }*/
+
+    /**
      * Find an item by id.
      *
      * @param mixed $id
