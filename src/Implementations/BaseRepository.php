@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelSimpleModule;
+namespace LaravelSimpleModule\Implementations;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
