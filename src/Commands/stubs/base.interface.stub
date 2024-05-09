@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 /**
  * Interface {{ interface }}.
  */
+
 interface {{ interface }}
 {
     /**

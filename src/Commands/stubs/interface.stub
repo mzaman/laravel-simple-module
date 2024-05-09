@@ -5,6 +5,7 @@ namespace {{ namespace }};
 /**
  * Interface {{ interface }}.
  */
+
 interface {{ interface }}
 {
 

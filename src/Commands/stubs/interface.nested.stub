@@ -4,7 +4,10 @@ namespace {{ namespace }};
 
 /**
  * Interface {{ interface }}.
+ *
+ * @extends {{ parent }}
  */
+
 interface {{ interface }} extends {{ parent }}
 {
     
