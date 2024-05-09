@@ -5,6 +5,7 @@ namespace {{ namespace }};
 /**
  * Abstract class {{ class }}.
  */
+
 abstract class {{ class }}
 {
 

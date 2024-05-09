@@ -4,7 +4,10 @@ namespace {{ namespace }};
 
 /**
  * Abstract class {{ class }}.
+ *
+ * @extends {{ parent }}
  */
+
 abstract class {{ class }} extends {{ parent }}
 {
 

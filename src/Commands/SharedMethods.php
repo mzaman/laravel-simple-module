@@ -157,43 +157,76 @@ trait SharedMethods
     protected function ensureBaseClassesExist()
     {
         $commandType = CommandType::SYMFONY;
-        $stubs = [
+
+        $base = [
             'interface' => __DIR__ . '/stubs/base.interface.stub',
+        ];
+
+        $interfaces = [
             'repository' => __DIR__ . '/stubs/repository.base-interface.stub',
             'service' => __DIR__ . '/stubs/service.base-interface.stub',
         ];
 
+        $abstracts = [
+            'repository' => __DIR__ . '/stubs/repository.base-abstract.stub',
+            'service' => __DIR__ . '/stubs/service.base-abstract.stub',
+        ];
+
+        $types = [
+            'base' => $base,
+            'interface' => $interfaces,
+            'abstract' => $abstracts,
+        ];
+
         $commands = [];
         $parent = null;
-        foreach($stubs as $type => $stubPath) {
-            $namespace = $this->getDefaultNamespace($type);
-            $path = $this->getPathFromNamespace($namespace);
-            $class = $this->getDefaultBaseName($type);
+        $interface = null;
 
-            $namespacedClass = $this->getDefaultNamespacedClass($type);
+        foreach($types as $typeGroup => $classes) {
+            foreach($classes as $type => $stubPath) {
+                $namespace = $this->getDefaultNamespace($type);
+                $path = $this->getPathFromNamespace($namespace);
+                $class = $this->getDefaultBaseName($type);
+                $namespacedClass = $this->getDefaultNamespacedClass($type);
 
-            if($type == 'interface') {
-                $parent = $namespacedClass;
-            } else {
-                $class .= 'Interface';
+                if($typeGroup == 'base') {
+                    $parent = $namespacedClass;
+                }
+
+                if($typeGroup == 'interface') {
+                    $$type = $namespacedClass;
+                    $class .= 'Interface';
+                }
+
+                if($typeGroup == 'abstract') {
+                    $parent = null;
+                    if($type == 'repository') {
+                        $interface = $repository . 'Interface';
+                    }
+
+                    if($type == 'service') {
+                        $interface = $service . 'Interface';
+                    }
+                }
+
+                $commandOptions = array_filter([
+                    'name' => class_basename($class),
+                    '--path' => $path,
+                    '--stub' => $stubPath,
+                    '--parent' => $typeGroup !== 'base' ? $parent : null,
+                    '--interface' => $interface,
+                    '--force' => $this->isAvailable($namespacedClass) ? true : true,
+                ]);
+
+                $command = $this->toCommandArgument([$this->getCommand($typeGroup=='base' ? 'interface' : $typeGroup), $commandOptions], $commandType);
+
+                if($command) {
+                    array_push($commands, $command);
+                }
             }
-
-            $commandOptions = array_filter([
-                'name' => str_replace('\\', '/', $class),
-                '--path' => $path,
-                '--stub' => $stubPath,
-                '--parent' => $parent,
-                '--force' => $this->isAvailable($namespacedClass) ? true : false,
-            ]);
-
-            $command = $this->toCommandArgument([$this->getCommand('interface'), $commandOptions], $commandType);
-            array_push($commands, $command);
         }
-        
-        $this->exec($commands, function ($results) {
-            // var_dump($results);
-            return $results;
-        });
+
+        $this->exec($commands);
     }
 
     /**
@@ -230,12 +263,20 @@ trait SharedMethods
         $stubProperties = [
             "{{ namespace }}" => $namespace,
             "{{ class }}" => $class,
-            "{{ interface }}" => $class
+            // "{{ interface }}" => $class
         ];
 
-        $parent = $this->hasOption('parent') ? $this->option('parent') : null;  
+        $parent = $this->hasOption('parent') ? $this->option('parent') : null;
+        $interface = $this->hasOption('interface') ? $this->option('interface') : null; 
+
         if ($parent) {
-            $stubProperties["{{ parent }}"] = $parent;
+            $stubProperties["{{ parent }}"] = "\\" . $this->qualifyClass($parent);
+        }  
+
+        if ($interface) {
+            $stubProperties["{{ interface }}"] = "\\" . $this->qualifyClass($interface);
+        } else {
+            $stubProperties["{{ interface }}"] = $class;
         }
 
         if($this->isAvailable($namespacedClass)) {
@@ -1421,7 +1462,7 @@ trait SharedMethods
         // If parent or interface option is provided, and a stub path is set, use nested stub
         $parentOption = $this->hasOption('parent') ? $this->option('parent') : null;
         $interfaceOption = $this->hasOption('interface') ? $this->option('interface') : null;
-        
+
         if (($parentOption || $interfaceOption) && $this->stubPath) {
             // Check if both parent and interface options are provided
             if ($parentOption && $interfaceOption) {
@@ -1953,7 +1994,7 @@ trait SharedMethods
         $type = $type ?: $this->type;
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_suffix';
-        return config($key) ?: $normalizedType;
+        return $this->removeLast(config($key) ?: $normalizedType, ['Abstract']);
     }
 
     /**

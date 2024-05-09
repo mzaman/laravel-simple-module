@@ -4,7 +4,10 @@ namespace {{ namespace }};
 
 /**
  * Abstract class {{ class }}.
+ *
+ * @implements {{ interface }}
  */
+
 abstract class {{ class }} implements {{ interface }}
 {
 
