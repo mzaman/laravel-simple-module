@@ -2,13 +2,14 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\Implementations\Eloquent;
 use {{ namespacedModel }}\{{ modelVariable }};
 
 /**
  * Class {{ class }}.
+ * 
+ * @extends {{ parent }}
  */
-class {{ class }} extends Eloquent implements {{ interface }} { 
+class {{ class }} extends {{ parent }} implements {{ interface }} { 
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

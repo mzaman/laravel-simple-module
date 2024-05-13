@@ -2,15 +2,13 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\BaseService;
-
 /**
  * Interface {{ interface }}.
  *
  * @extends {{ parent }}
  */
 
-interface {{ interface }} extends BaseService { 
+interface {{ interface }} extends {{ parent }} { 
 
     // Additional methods specific to {{ interface }}
     // New methods for the service operations

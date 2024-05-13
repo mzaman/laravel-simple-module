@@ -147,14 +147,13 @@ trait SharedMethods
         $this->ensureDirectoryExists($path);
     }
 
-
-
     /**
      * Create default interface and abstracts
      *
-     * @return string
+     * @param bool|null $isFresh Create a fresh request file 
+     * @return void
      */
-    protected function ensureBaseClassesExist()
+    protected function ensureBaseClassesExist($isFresh = true)
     {
         $commandType = CommandType::SYMFONY;
 
@@ -187,7 +186,7 @@ trait SharedMethods
                 $namespace = $this->getDefaultNamespace($type);
                 $path = $this->getPathFromNamespace($namespace);
                 $class = $this->getDefaultBaseName($type);
-                $namespacedClass = $this->getDefaultNamespacedClass($type);
+                $namespacedClass = $this->getDefaultQualifiedClass($type);
 
                 if($typeGroup == 'base') {
                     $parent = $namespacedClass;
@@ -215,7 +214,7 @@ trait SharedMethods
                     '--stub' => $stubPath,
                     '--parent' => $typeGroup !== 'base' ? $parent : null,
                     '--interface' => $interface,
-                    '--force' => $this->isAvailable($namespacedClass) ? true : true,
+                    '--force' => is_null($isFresh) ? !!$this->isAvailable() : $isFresh ,
                 ]);
 
                 $command = $this->toCommandArgument([$this->getCommand($typeGroup=='base' ? 'interface' : $typeGroup), $commandOptions], $commandType);
@@ -270,11 +269,11 @@ trait SharedMethods
         $interface = $this->hasOption('interface') ? $this->option('interface') : null; 
 
         if ($parent) {
-            $stubProperties["{{ parent }}"] = "\\" . $this->qualifyClass($parent);
+            $stubProperties["{{ parent }}"] = $this->fullyQualifyClass($parent);
         }  
 
         if ($interface) {
-            $stubProperties["{{ interface }}"] = "\\" . $this->qualifyClass($interface);
+            $stubProperties["{{ interface }}"] = $this->fullyQualifyClass($interface);
         } else {
             $stubProperties["{{ interface }}"] = $class;
         }
@@ -1406,6 +1405,12 @@ trait SharedMethods
         ];
 
 
+        $parent = $this->hasOption('parent') ? $this->option('parent') . 'Interface' : null;
+
+        if ($parent) {
+            $stubProperties["{{ parent }}"] = $this->fullyQualifyClass($parent);
+        } 
+
         $interfaceFile = $this->getInterfaceFile();
 
         $namespacedInterface = $namespace . "\\" . $interface;
@@ -1958,32 +1963,6 @@ trait SharedMethods
     }
 
     /**
-     * get the class default base name from type.
-     *
-     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
-     *
-     * @return string
-     */
-    protected function getDefaultBaseName($type = null) {
-        $suffix = $this->getSuffix($type);
-        $name = config('simple-module-sys.interface_base_name') ?: 'Base';
-        return $name . $suffix;
-    }
-
-    /**
-     * get the class default namespaced base class from type.
-     *
-     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
-     *
-     * @return string
-     */
-    protected function getDefaultNamespacedClass($type = null) {
-        $namespace = $this->getDefaultNamespace($type);
-        $class = $this->getDefaultBaseName($type);
-        return $namespace . '\\' . $class;
-    }
-
-    /**
      * get the class suffix from type.
      *
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
@@ -2023,6 +2002,32 @@ trait SharedMethods
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_class';
         return config($key) ?: $defaultClassPrefix . $normalizedType;
+    }
+
+    /**
+     * get the class default base name from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    protected function getDefaultBaseName($type = null) {
+        $suffix = $this->getSuffix($type);
+        $name = config('simple-module-sys.interface_base_name') ?: 'Base';
+        return $name . $suffix;
+    }
+
+    /**
+     * get the class default namespaced base class from type.
+     *
+     * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
+     *
+     * @return string
+     */
+    protected function getDefaultNamespacedClass($type = null) {
+        $namespace = $this->getDefaultNamespace($type);
+        $class = $this->getDefaultBaseName($type);
+        return $namespace . '\\' . $class;
     }
 
     /**
@@ -2091,6 +2096,34 @@ trait SharedMethods
         );
     }
 
+    /**
+     * Get the default fully qualified class name based on the type, ensuring it starts with \App.
+     *
+     * @param  string|null  $type  The type of the class (e.g., 'Model', 'Service', etc.).
+     * @return string
+     */
+    protected function getDefaultQualifiedClass($type = null)
+    {
+        $namespacedClass = $this->getDefaultNamespace($type) . '\\' . $this->getDefaultBaseName($type);
+        $fullyQualifiedClass = $this->fullyQualifyClass($namespacedClass);
+        
+        // Ensure that the class starts with \App
+        return $fullyQualifiedClass;
+    }
+
+    /**
+     * Get the fully qualified class name with \App namespace.
+     *
+     * @param  string  $name
+     * @return string
+     */
+    protected function fullyQualifyClass($name)
+    {
+        $qualifiedName = $this->qualifyClass($name);
+
+        return '\\' . $qualifiedName;
+    }
+    
     /**
      * Get the desired class name from the input and format.
      *

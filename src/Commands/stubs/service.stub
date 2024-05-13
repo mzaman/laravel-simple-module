@@ -2,13 +2,14 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\Service;
 use {{ namespacedRepository }}\{{ repositoryVariable }};
 
 /**
  * Class {{ class }}.
+ * 
+ * @extends {{ parent }}
  */
-class {{ class }} extends Service implements {{ interface }} { 
+class {{ class }} extends {{ parent }} implements {{ interface }} { 
 
      /**
      * don't change $this->repository variable name

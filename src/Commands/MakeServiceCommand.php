@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use LaravelSimpleModule\AssistCommand;
 use LaravelSimpleModule\CreateFile;
 use Illuminate\Support\Pluralizer;
+use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use LaravelSimpleModule\Commands\SharedMethods;
 use File;
@@ -38,12 +39,19 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
     
     public function handle()
     { 
+        // Ensure that base classes exist
+        $this->ensureBaseClassesExist();
+        
+        // Determine and assign the default parent option
+        $this->addOption('parent', null, InputOption::VALUE_OPTIONAL, 'The parent interface to extend', $this->getDefaultQualifiedClass($this->type));
 
         // Create the directory structure and generate relevant files
         $this->checkIfRequiredDirectoriesExist();
+
         // First we create the service interface in the interfaces directory
         // This will be implemented by the interface class
         $this->createInterface();
+
         $this->create();
 
         if ($this->option('repository')) {
@@ -77,6 +85,10 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
             "{{ repositoryVariable }}" => $namespacedRepository['class'],
         ];
 
+        if ($this->hasOption('parent')) {
+            $stubProperties["{{ parent }}"] = $this->fullyQualifyClass($this->option('parent'));
+        }
+        
         $namespacedClass = $namespace . "\\" . $class;
 
         if($this->isAvailable($namespacedClass, $this->type)) {

@@ -2,15 +2,13 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\Repository;
-
 /**
  * Interface {{ interface }}.
  *
  * @extends {{ parent }}
  */
 
-interface {{ interface }} extends Repository { 
+interface {{ interface }} extends {{ parent }} { 
 
     // Additional methods specific to {{ interface }}
     // New methods for the repository operations

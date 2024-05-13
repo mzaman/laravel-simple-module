@@ -2,7 +2,6 @@
 
 namespace {{ namespace }}\{{ folder }};
 
-use LaravelSimpleModule\Repository;
 use {{ namespacedInterface }}\{{ interface }};
 
 /**

@@ -2,7 +2,7 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\ServiceApi;
+use LaravelSimpleModule\Implementations\ServiceApi;
 use {{ namespacedRepository }}\{{ repositoryVariable }};
 
 /**

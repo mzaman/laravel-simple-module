@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use LaravelSimpleModule\AssistCommand;
 use LaravelSimpleModule\CreateFile;
 use LaravelSimpleModule\Constants\CommandType;
+use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use LaravelSimpleModule\Commands\SharedMethods;
 use File;
@@ -35,8 +36,9 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      */
     protected $type = 'Repository';
     protected $interfaceStubPath = __DIR__ . '/stubs/repository.interface.stub';
-    protected $stubPath = __DIR__ . '/stubs/repository.eloquent.stub';
+    protected $stubPath = __DIR__ . '/stubs/repository.nested.stub';
     protected $customStubPath = __DIR__ . '/stubs/repository.custom.stub';
+    
 
     /**
      * Handle the command
@@ -45,6 +47,12 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
      */
     public function handle()
     {
+        // Ensure that base classes exist
+        $this->ensureBaseClassesExist();
+        
+        // Determine and assign the default parent option
+        $this->addOption('parent', null, InputOption::VALUE_OPTIONAL, 'The parent interface to extend', $this->getDefaultQualifiedClass($this->type));
+
 
         // $classBaseName = $this->getClassBaseName();
         $other = $this->option("other");
@@ -110,6 +118,10 @@ class MakeRepositoryCommand extends Command implements PromptsForMissingInput
             "{{ namespacedModel }}"   => $model['namespace'],
             "{{ modelVariable }}"   => $model['class']
         ];
+
+        if ($this->hasOption('parent')) {
+            $stubProperties["{{ parent }}"] = $this->fullyQualifyClass($this->option('parent'));
+        }
 
         if($this->isAvailable($namespacedClass, $this->type)) {
             // check folder exist
