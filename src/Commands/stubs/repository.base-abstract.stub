@@ -140,19 +140,27 @@ abstract class {{ class }} implements {{ interface }}
     {
         return $this->model->insert($data);
     }
-
+    
     /**
-     * Delete all items.
+     * Delete all items or the specified model record from the database by ID.
+     *
+     * @param  mixed|null  $id
+     * @return bool|null
+     * @throws \Exception
      */
-    public function delete()
+    public function delete($id = null)
     {
-        $this->newQuery()->setClauses()->setScopes();
+        if ($id) {
+            return $this->deleteById($id);
+        } else {
+            $this->newQuery()->setClauses()->setScopes();
 
-        $result = $this->query->delete();
+            $result = $this->query->delete();
 
-        $this->unsetClauses();
+            $this->unsetClauses();
 
-        return $result;
+            return $result;
+        }
     }
 
     /**

@@ -57,13 +57,15 @@ interface {{ interface }}
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function createMultiple(array $data);
-
+    
     /**
-     * Delete all items.
+     * Delete all items or the specified model record from the database by ID.
      *
+     * @param  mixed|null  $id
      * @return bool|null
+     * @throws \Exception
      */
-    public function delete();
+    public function delete($id = null);
 
     /**
      * Delete the specified model record from the database.
