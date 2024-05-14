@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 interface BaseService
 {
     /**
-     * Fin an item by id
+     * Find an item by id
      * @param mixed $id
      * @return Model|null
      */
