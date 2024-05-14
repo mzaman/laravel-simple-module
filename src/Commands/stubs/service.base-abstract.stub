@@ -13,6 +13,12 @@ use \Exception;
  */
 abstract class {{ class }} implements {{ interface }}
 {
+    /**
+     * The repository instance.
+     *
+     * @var $repository
+     */
+    protected $repository;
 
     /**
      * Find an item by id.
@@ -72,14 +78,13 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Delete a model.
+     * Delete all items or the specified model record from the database by ID.
      *
-     * @param int|Model $id
+     * @param  mixed|null  $id
      * @return bool|null
-     *
-     * @throws Exception
+     * @throws \Exception
      */
-    public function delete($id)
+    public function delete($id = null)
     {
         return $this->repository->delete($id);
     }
