@@ -2,10 +2,8 @@
 
 namespace {{ namespace }};
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use \Exception;
 
 /**
@@ -13,12 +11,12 @@ use \Exception;
  *
  * @implements {{ interface }}
  */
-
 abstract class {{ class }} implements {{ interface }}
 {
 
     /**
-     * Find an item by id
+     * Find an item by id.
+     *
      * @param mixed $id
      * @return Model|null
      */
@@ -28,9 +26,12 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Find an item by id or fail
+     * Find an item by id or fail.
+     *
      * @param mixed $id
-     * @return Model|null
+     * @return Model
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findOrFail($id)
     {
@@ -38,53 +39,70 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Return all items
-     * @return Collection|null
+     * Return all items.
+     *
+     * @return Collection
      */
-    public function all()
+    public function all(): Collection
     {
         return $this->repository->all();
     }
 
     /**
-     * Create an item
+     * Create an item.
+     *
      * @param array|mixed $data
      * @return void
      */
-    public function create($data)
+    public function create($data): void
     {
         $this->repository->create($data);
     }
 
     /**
-     * Update a model
+     * Update a model.
+     *
      * @param int|mixed $id
-     * @param array|mixed $data
-     * @return void
+     * @param array $data
+     * @return Model
      */
-    public function update($id, array $data)
+    public function update($id, array $data): Model
     {
-        $this->repository->update($id, $data);
+        return $this->repository->update($id, $data);
     }
 
     /**
-     * Delete a model
+     * Delete a model.
+     *
      * @param int|Model $id
-     * @return void
+     * @return bool|null
+     *
+     * @throws Exception
      */
     public function delete($id)
     {
-        $this->repository->delete($id);
+        return $this->repository->delete($id);
     }
 
     /**
-     * multiple delete
-     * @param array $id
+     * Delete multiple models.
+     *
+     * @param array $ids
+     * @return int
+     */
+    public function deleteMultiple(array $ids): int
+    {
+        return $this->repository->deleteMultiple($ids);
+    }
+
+    /**
+     * Delete multiple models.
+     *
+     * @param array $ids
      * @return void
      */
-    public function destroy(array $id)
+    public function destroy(array $ids)
     {
-        $this->repository->destroy($id);
+        $this->repository->destroy($ids);
     }
 }
-
