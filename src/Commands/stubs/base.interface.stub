@@ -8,61 +8,62 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Interface {{ interface }}.
+ * This interface defines common database operations for Eloquent models in Laravel.
  */
-
 interface {{ interface }}
 {
     /**
-     * Find an item by id.
+     * Find an item by its id.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @param mixed $id The id of the item to find.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
      */
     public function find($id);
 
     /**
-     * Find an item by id or fail.
+     * Find an item by its id or fail with an exception if not found.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param mixed $id The id of the item to find.
+     * @return \Illuminate\Database\Eloquent\Model The found item.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function findOrFail($id);
 
     /**
-     * Get all the model records in the database.
+     * Get all model records from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Database\Eloquent\Collection All model records.
      */
     public function all();
 
     /**
      * Count the number of specified model records in the database.
      *
-     * @return int
+     * @return int The count of model records.
      */
     public function count();
 
     /**
-     * Create an item.
+     * Create a new item.
      *
-     * @param array $data
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @param array $data The data to create the item.
+     * @return \Illuminate\Database\Eloquent\Model|null The created item.
      */
     public function create(array $data);
 
     /**
      * Create multiple items.
      *
-     * @param array $data
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param array $data An array of data to create multiple items.
+     * @return \Illuminate\Database\Eloquent\Collection Created items.
      */
     public function createMultiple(array $data);
     
     /**
      * Delete all items or the specified model record from the database by ID.
      *
-     * @param  mixed|null  $id
-     * @return bool|null
+     * @param  mixed|null $id The ID of the item to delete, or null to delete all items.
+     * @return bool|null True if deletion is successful, null if deletion fails, or if no item is found for the given ID.
      * @throws \Exception
      */
     public function delete($id = null);
@@ -70,70 +71,72 @@ interface {{ interface }}
     /**
      * Delete the specified model record from the database.
      *
-     * @param mixed $id
-     * @return bool|null
+     * @param mixed $id The ID of the item to delete.
+     * @return bool|null True if deletion is successful, null if deletion fails.
      */
     public function deleteById($id);
 
     /**
-     * Delete multiple items by ids.
+     * Delete multiple items by their IDs.
      *
-     * @param array $ids
-     * @return int
+     * @param array $ids An array of IDs of items to delete.
+     * @return int The number of deleted items.
      */
     public function deleteMultipleById(array $ids);
 
     /**
      * Get the first specified model record from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
      */
     public function first();
 
     /**
-     * Get the first specified model record from the database or throw an exception if not found.
+     * Get the first specified model record from the database or fail with an exception if not found.
      *
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the record is not found.
      */
     public function firstOrFail();
 
     /**
-     * Get all the specified model records in the database.
+     * Get all specified model records from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Database\Eloquent\Collection All specified model records.
      */
     public function get();
 
     /**
      * Get the specified model record from the database by its ID.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @param mixed $id The ID of the item to get.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
      */
     public function getById($id);
 
     /**
-     * Get the specified model record from the database by its ID or throw an exception if not found.
+     * Get the specified model record from the database by its ID or fail with an exception if not found.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param mixed $id The ID of the item to get.
+     * @return \Illuminate\Database\Eloquent\Model The found item.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function getByIdOrFail($id);
 
     /**
      * Get an item by column value.
      *
-     * @param mixed $item
-     * @param string $column
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @param mixed $item The value of the column to search for.
+     * @param string $column The column to search in.
+     * @param array $columns The columns to retrieve.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
      */
     public function getByColumn($item, $column, array $columns = ['*']);
 
     /**
      * Set the query limit.
      *
-     * @param int $limit
+     * @param int $limit The limit of the query.
      * @return $this
      */
     public function limit($limit);
@@ -141,38 +144,38 @@ interface {{ interface }}
     /**
      * Set an ORDER BY clause.
      *
-     * @param string $column
-     * @param string $direction
+     * @param string $column The column to order by.
+     * @param string $direction The direction of ordering ('asc' or 'desc').
      * @return $this
      */
     public function orderBy($column, $direction = 'asc');
 
     /**
-     * Update an item by id.
+     * Update an item by its ID.
      *
-     * @param mixed $id
-     * @param array $data
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param mixed $id The ID of the item to update.
+     * @param array $data The data to update.
+     * @return \Illuminate\Database\Eloquent\Model The updated item.
      */
     public function updateById($id, array $data);
 
     /**
      * Paginate the specified model records.
      *
-     * @param int $limit
-     * @param array $columns
-     * @param string $pageName
-     * @param int|null $page
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @param int $limit The number of records per page.
+     * @param array $columns The columns to retrieve.
+     * @param string $pageName The name of the page query parameter.
+     * @param int|null $page The page number.
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Paginated results.
      */
     public function paginate($limit = 25, array $columns = ['*'], $pageName = 'page', $page = null);
 
     /**
      * Add a simple where clause to the query.
      *
-     * @param string $column
-     * @param mixed $value
-     * @param string $operator
+     * @param string $column The column to filter by.
+     * @param mixed $value The value to compare against.
+     * @param string $operator The comparison operator.
      * @return $this
      */
     public function where($column, $value, $operator = '=');
@@ -180,8 +183,8 @@ interface {{ interface }}
     /**
      * Add a simple where in clause to the query.
      *
-     * @param string $column
-     * @param mixed $values
+     * @param string $column The column to filter by.
+     * @param mixed $values The values to compare against.
      * @return $this
      */
     public function whereIn($column, $values);
@@ -189,9 +192,8 @@ interface {{ interface }}
     /**
      * Set Eloquent relationships to eager load.
      *
-     * @param string|array $relations
+     * @param string|array $relations The relationships to eager load.
      * @return $this
      */
     public function with($relations);
 }
-
