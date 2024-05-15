@@ -2,13 +2,14 @@
 
 namespace {{ namespace }};
 
-use LaravelSimpleModule\Implementations\ServiceApi;
 use {{ namespacedRepository }}\{{ repositoryVariable }};
 
 /**
  * Class {{ class }}.
+ * 
+ * @extends {{ parent }}
  */
-class {{ class }} extends ServiceApi implements {{ interface }} { 
+class {{ class }} extends {{ parent }} implements {{ interface }} { 
 
     /**
      * set message api for CRUD

@@ -169,6 +169,7 @@ trait SharedMethods
         $abstracts = [
             'repository' => __DIR__ . '/stubs/repository.base-abstract.stub',
             'service' => __DIR__ . '/stubs/service.base-abstract.stub',
+            'service.api' => __DIR__ . '/stubs/service.api.base-abstract.stub',
         ];
 
         $types = [
@@ -183,7 +184,9 @@ trait SharedMethods
 
         foreach($types as $typeGroup => $classes) {
             foreach($classes as $type => $stubPath) {
-                $namespace = $this->getDefaultNamespace($type);
+
+                $defaultType = $this->getDefaultType($type);
+                $namespace = $this->getDefaultNamespace($defaultType);
                 $path = $this->getPathFromNamespace($namespace);
                 $class = $this->getDefaultBaseName($type);
                 $namespacedClass = $this->getDefaultQualifiedClass($type);
@@ -1970,7 +1973,7 @@ trait SharedMethods
      * @return string
      */
     protected function getSuffix($type = null) {
-        $type = $type ?: $this->type;
+        $type = $this->getDefaultType($type);
         $normalizedType = $this->toPascalSingular($type);
         $key = 'simple-module-sys.' . $this->toLowerSingular($type) . '_suffix';
         return $this->removeLast(config($key) ?: $normalizedType, ['Abstract']);
@@ -2005,16 +2008,48 @@ trait SharedMethods
     }
 
     /**
-     * get the class default base name from type.
+     * Get the default type from the given string.
+     *
+     * @param string|null $type The type string (e.g., 'Model', 'Service', etc.).
+     * 
+     * @return string
+     */
+    protected function getDefaultType($type = null)
+    {
+        $type = $type ?: $this->type;
+        return ucfirst(explode('.', $type)[0]);
+    }
+
+    /**
+     * Get the prefix from the given type string.
+     *
+     * @param string|null $type The type string (e.g., 'Model', 'Service', etc.).
+     * 
+     * @return string
+     */
+    protected function getPrefix($type = null)
+    {
+        if (Str::contains($type, '.')) {
+            [, $prefix] = explode('.', $type, 2);
+            return ucfirst($prefix);
+        }
+
+        return '';
+    }
+
+    /**
+     * Get the default base name from the type.
      *
      * @param string|null $type The type of the namespace (e.g., 'Model', 'Service', etc.).
      *
      * @return string
      */
-    protected function getDefaultBaseName($type = null) {
+    protected function getDefaultBaseName($type = null)
+    {
+        $prefix = $this->getPrefix($type);
         $suffix = $this->getSuffix($type);
         $name = config('simple-module-sys.interface_base_name') ?: 'Base';
-        return $name . $suffix;
+        return $name . $prefix . $suffix;
     }
 
     /**
@@ -2039,6 +2074,12 @@ trait SharedMethods
      */
     protected function getDefaultNamespace($type = null) {
         $type = $type ?: $this->type;
+        $prefix = '';
+        if (Str::contains($type, '.')) {
+            [$type, $suffix] = explode('.', $type, 2);
+            $prefix = ucfirst($suffix);
+        }
+
         $normalizedNamespace = $this->laravelNamespace() . ($this->isHttpType() ? 'Http\\' : null) . $this->toPascalPlural($type);
 
         $key = 'simple-module.' . $this->toLowerSingular($type) . '_namespace';

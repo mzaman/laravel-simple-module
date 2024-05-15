@@ -41,9 +41,9 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
     { 
         // Ensure that base classes exist
         $this->ensureBaseClassesExist();
-        
+        $type = $this->option("api") ? $this->type . '.api' : $this->type;
         // Determine and assign the default parent option
-        $this->addOption('parent', null, InputOption::VALUE_OPTIONAL, 'The parent interface to extend', $this->getDefaultQualifiedClass($this->type));
+        $this->addOption('parent', null, InputOption::VALUE_OPTIONAL, 'The parent interface to extend', $this->getDefaultQualifiedClass($type));
 
         // Create the directory structure and generate relevant files
         $this->checkIfRequiredDirectoriesExist();
@@ -67,7 +67,7 @@ class MakeServiceCommand extends Command implements PromptsForMissingInput
     public function create()
     {
         $namespace = $this->getNamespace();
-        $class = $this->getClassName();
+        $class = $this->getClassName(); // TODO: ensure suffix if not provided
         $interface = $this->getInterfaceClassName();
 
         $repository = $this->getConvertedClass();
