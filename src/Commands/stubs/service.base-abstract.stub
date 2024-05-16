@@ -21,25 +21,25 @@ abstract class {{ class }} implements {{ interface }}
     protected $repository;
 
     /**
-     * Find an item by id.
+     * Find an item by its ID.
      *
-     * @param mixed $id
-     * @return Model|null
+     * @param mixed $id The ID of the item to find.
+     * @return Model|null The found item.
      */
-    public function find($id)
+    public function find($id): ?Model
     {
         return $this->repository->find($id);
     }
 
     /**
-     * Find an item by id or fail.
+     * Find an item by its ID or fail.
      *
-     * @param mixed $id
-     * @return Model
+     * @param mixed $id The ID of the item to find.
+     * @return Model The found item.
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function findOrFail($id)
+    public function findOrFail($id): Model
     {
         return $this->repository->findOrFail($id);
     }
@@ -47,7 +47,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Return all items.
      *
-     * @return Collection
+     * @return Collection All items.
      */
     public function all(): Collection
     {
@@ -57,7 +57,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create an item.
      *
-     * @param array|mixed $data
+     * @param array|mixed $data The data to create the item.
      * @return void
      */
     public function create($data): void
@@ -68,9 +68,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Update a model.
      *
-     * @param int|mixed $id
-     * @param array $data
-     * @return Model
+     * @param int|mixed $id The ID of the item to update.
+     * @param array $data The data to update.
+     * @return Model The updated model.
      */
     public function update($id, array $data): Model
     {
@@ -80,8 +80,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete all items or the specified model record from the database by ID.
      *
-     * @param  mixed|null  $id
-     * @return bool|null
+     * @param  mixed|null  $id The ID of the item to delete.
+     * @return bool|null True if the delete is successful, otherwise null.
      * @throws \Exception
      */
     public function delete($id = null)
@@ -90,10 +90,10 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Delete multiple models.
+     * Delete multiple models by their IDs.
      *
-     * @param array $ids
-     * @return int
+     * @param array $ids The IDs of the items to delete.
+     * @return int The number of models deleted.
      */
     public function deleteMultiple(array $ids): int
     {
@@ -101,9 +101,9 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Delete multiple models.
+     * Destroy multiple models by their IDs.
      *
-     * @param array $ids
+     * @param array $ids The IDs of the items to destroy.
      * @return void
      */
     public function destroy(array $ids)
