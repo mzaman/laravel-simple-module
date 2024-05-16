@@ -2,7 +2,6 @@
 
 namespace {{ namespace }};
 
-// use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use \Exception;
@@ -14,6 +13,7 @@ use \Exception;
  */
 abstract class {{ class }} implements {{ interface }}
 {
+    // Properties for response formatting
     protected $title = "";
     protected $create_message = "";
     protected $update_message = "";
@@ -26,20 +26,21 @@ abstract class {{ class }} implements {{ interface }}
     private $code = null;
 
     /**
-     * set result output
-     * @param $result
+     * Set the result output.
+     *
+     * @param mixed $result The result to set.
      * @return $this
      */
     public function setResult($result)
     {
         $this->result = $result;
-
         return $this;
     }
 
     /**
-     * get result
-     * @return null
+     * Get the result.
+     *
+     * @return mixed|null The result.
      */
     public function getResult()
     {
@@ -47,20 +48,21 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * set status
-     * @param $status
+     * Set the status.
+     *
+     * @param bool $status The status to set.
      * @return $this
      */
     public function setStatus($status)
     {
         $this->status = $status;
-
         return $this;
     }
 
     /**
-     * get status
-     * @return bool
+     * Get the status.
+     *
+     * @return bool The status.
      */
     public function getStatus()
     {
@@ -68,20 +70,21 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * set message
-     * @param $message
+     * Set the message.
+     *
+     * @param mixed $message The message to set.
      * @return $this
      */
     public function setMessage($message)
     {
         $this->message = $message;
-
         return $this;
     }
 
     /**
-     * get message
-     * @return null
+     * Get the message.
+     *
+     * @return mixed|null The message.
      */
     public function getMessage()
     {
@@ -89,20 +92,21 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * set code
-     * @param $code
+     * Set the code.
+     *
+     * @param mixed $code The code to set.
      * @return $this
      */
     public function setCode($code)
     {
         $this->code = $code;
-
         return $this;
     }
 
     /**
-     * get code
-     * @return null
+     * Get the code.
+     *
+     * @return mixed|null The code.
      */
     public function getCode()
     {
@@ -110,10 +114,10 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Exception Response
+     * Exception response handler.
      *
-     * @param Exception $exception
-     * @return ResultService
+     * @param Exception $exception The exception to handle.
+     * @return $this
      */
     public function exceptionResponse(Exception $exception)
     {
@@ -151,16 +155,13 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * response to json
-     * @return \Illuminate\Http\JsonResponse
+     * Convert the response to JSON.
+     *
+     * @return \Illuminate\Http\JsonResponse The JSON response.
      */
     public function toJson()
     {
-        if(is_null($this->getCode())){
-            $http_code = $this->getStatus() ? 200 : 400;
-        }else{
-            $http_code = $this->getCode();
-        }
+        $http_code = $this->getCode() ?? ($this->getStatus() ? 200 : 400);
 
         return response()->json([
             'success' => $this->getStatus(),
@@ -173,26 +174,28 @@ abstract class {{ class }} implements {{ interface }}
     /* Response formatting related code: END */
 
     /**
-     * Find an item by id
-     * @param mixed $id
-     * @return Model|null
+     * Find an item by its ID.
+     *
+     * @param mixed $id The ID of the item to find.
+     * @return Model|null The found item.
      */
     public function find($id)
     {
         try {
             $result = $this->repository->find($id);
             return $this->setResult($result)
-                        ->setCode(200)
-                        ->setStatus(true);
+                ->setCode(200)
+                ->setStatus(true);
         } catch (\Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
 
     /**
-     * Find an item by id or fail
-     * @param mixed $id
-     * @return Model|null
+     * Find an item by its ID or fail.
+     *
+     * @param mixed $id The ID of the item to find.
+     * @return Model|null The found item.
      */
     public function findOrFail($id)
     {
@@ -207,8 +210,9 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Return all items
-     * @return Collection|null
+     * Return all items.
+     *
+     * @return Collection|null All items.
      */
     public function all()
     {
@@ -223,9 +227,10 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Create an item
-     * @param array|mixed $data
-     * @return Model|null
+     * Create an item.
+     *
+     * @param array|mixed $data The data to create the item.
+     * @return Model|null The created item.
      */
     public function create($data)
     {
@@ -240,10 +245,11 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Update a model
-     * @param int|mixed $id
-     * @param array|mixed $data
-     * @return bool|mixed
+     * Update a model.
+     *
+     * @param int|mixed $id The ID of the item to update.
+     * @param array|mixed $data The data to update.
+     * @return bool|mixed True if the update is successful, otherwise the response with error details.
      */
     public function update($id, array $data)
     {
@@ -260,8 +266,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete all items or the specified model record from the database by ID.
      *
-     * @param  mixed|null  $id
-     * @return bool|null
+     * @param  mixed|null  $id The ID of the item to delete.
+     * @return bool|null True if the delete is successful, otherwise the response with error details.
      * @throws \Exception
      */
     public function delete($id = null)
@@ -277,14 +283,15 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * multiple delete
-     * @param array $id
-     * @return mixed
+     * Delete multiple items by their IDs.
+     *
+     * @param array $ids The IDs of the items to delete.
+     * @return mixed True if the delete is successful, otherwise the response with error details.
      */
-    public function destroy(array $id)
+    public function destroy(array $ids)
     {
         try {
-            $this->repository->destroy($id);
+            $this->repository->destroy($ids);
             return $this->setMessage($this->title." ".$this->delete_message)
                 ->setCode(200)
                 ->setStatus(true);

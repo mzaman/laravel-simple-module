@@ -12,7 +12,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  *
  * @extends {{ parent }}
  */
-
 interface {{ interface }} extends {{ parent }}
 {
     
