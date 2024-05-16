@@ -6,6 +6,8 @@ use {{ namespacedInterface }}\{{ interface }};
 
 /**
  * Class {{ class }}.
+ * 
+ * @implements {{ interface }}
  */
 class {{ class }} implements {{ interface }} { 
 

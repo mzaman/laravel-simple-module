@@ -2,7 +2,6 @@
 
 namespace {{ namespace }};
 
-
 /**
  * Trait {{ class }}.
  */

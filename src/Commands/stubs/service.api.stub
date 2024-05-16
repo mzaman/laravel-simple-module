@@ -8,11 +8,12 @@ use {{ namespacedRepository }}\{{ repositoryVariable }};
  * Class {{ class }}.
  * 
  * @extends {{ parent }}
+ * @implements {{ interface }}
  */
 class {{ class }} extends {{ parent }} implements {{ interface }} { 
 
     /**
-     * set message api for CRUD
+     * Set message api for CRUD
      * @param string $title
      * @param string $create_message
      * @param string $update_message
@@ -24,7 +25,7 @@ class {{ class }} extends {{ parent }} implements {{ interface }} {
      protected $delete_message = "";
 
      /**
-     * don't change $this->repository variable name
+     * Don't change $this->repository variable name
      * because used in extends service class
      */
      protected $repository;

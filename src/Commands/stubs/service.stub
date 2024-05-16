@@ -8,11 +8,12 @@ use {{ namespacedRepository }}\{{ repositoryVariable }};
  * Class {{ class }}.
  * 
  * @extends {{ parent }}
+ * @implements {{ interface }}
  */
 class {{ class }} extends {{ parent }} implements {{ interface }} { 
 
      /**
-     * don't change $this->repository variable name
+     * Don't change $this->repository variable name
      * because used in extends service class
      */
      protected $repository;
