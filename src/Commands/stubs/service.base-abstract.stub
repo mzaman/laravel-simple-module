@@ -23,8 +23,11 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its ID.
      *
+     * This method attempts to find a model instance by its primary key.
+     * If the model is found, it returns the model instance; otherwise, it returns null.
+     *
      * @param mixed $id The ID of the item to find.
-     * @return Model|null The found item.
+     * @return Model|null The found item, or null if not found.
      */
     public function find($id): ?Model
     {
@@ -34,10 +37,14 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its ID or fail.
      *
+     * This method attempts to find a model instance by its primary key.
+     * If the model is found, it returns the model instance.
+     * If the model is not found, it throws a ModelNotFoundException.
+     *
      * @param mixed $id The ID of the item to find.
      * @return Model The found item.
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the model is not found.
      */
     public function findOrFail($id): Model
     {
@@ -47,7 +54,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Return all items.
      *
-     * @return Collection All items.
+     * This method retrieves all model instances from the database.
+     *
+     * @return Collection A collection of all items.
      */
     public function all(): Collection
     {
@@ -57,7 +66,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create an item.
      *
-     * @param array|mixed $data The data to create the item.
+     * This method creates a new model instance with the given data and saves it to the database.
+     *
+     * @param array|mixed $data The data to create the item with.
      * @return void
      */
     public function create($data): void
@@ -68,8 +79,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Update a model.
      *
+     * This method updates an existing model instance with the given data.
+     *
      * @param int|mixed $id The ID of the item to update.
-     * @param array $data The data to update.
+     * @param array $data The data to update the item with.
      * @return Model The updated model.
      */
     public function update($id, array $data): Model
@@ -78,11 +91,14 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Delete all items or the specified model record from the database by ID.
+     * Delete an item by its ID or delete all items.
      *
-     * @param  mixed|null  $id The ID of the item to delete.
+     * This method deletes a specific model instance by its primary key.
+     * If no ID is provided, it deletes all model instances.
+     *
+     * @param  mixed|null  $id The ID of the item to delete, or null to delete all items.
      * @return bool|null True if the delete is successful, otherwise null.
-     * @throws \Exception
+     * @throws \Exception If an error occurs during the delete operation.
      */
     public function delete($id = null)
     {
@@ -91,6 +107,8 @@ abstract class {{ class }} implements {{ interface }}
 
     /**
      * Delete multiple models by their IDs.
+     *
+     * This method deletes multiple model instances by their primary keys.
      *
      * @param array $ids The IDs of the items to delete.
      * @return int The number of models deleted.
@@ -103,10 +121,13 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Destroy multiple models by their IDs.
      *
+     * This method deletes multiple model instances by their primary keys.
+     * It is similar to deleteMultiple but uses a different method name to emphasize the destruction process.
+     *
      * @param array $ids The IDs of the items to destroy.
      * @return void
      */
-    public function destroy(array $ids)
+    public function destroy(array $ids): void
     {
         $this->repository->destroy($ids);
     }
