@@ -9,13 +9,20 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Abstract class {{ class }}.
- * 
+ *
+ * This abstract class serves as a base repository class implementing the {{ interface }}.
+ * It provides a suite of common database operations for Eloquent models, including finding,
+ * creating, updating, deleting, and retrieving records with various query configurations.
+ *
  * @implements {{ interface }}
  */
 abstract class {{ class }} implements {{ interface }}
 {
     /**
      * The repository model.
+     *
+     * This protected property holds an instance of the Eloquent model
+     * associated with the repository. It is used to interact with the database.
      *
      * @var \Illuminate\Database\Eloquent\Model
      */
@@ -24,12 +31,18 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * The query builder.
      *
+     * This protected property holds the query builder instance
+     * used for constructing and executing database queries.
+     *
      * @var \Illuminate\Database\Eloquent\Builder
      */
     protected $query;
 
     /**
      * Alias for the query limit.
+     *
+     * This protected property defines the limit for the number of records to retrieve
+     * in a query. It can be set using the `limit` method.
      *
      * @var int
      */
@@ -38,12 +51,18 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Array of related models to eager load.
      *
+     * This protected property holds an array of relationships to be eager loaded
+     * with the model query to optimize performance and reduce the number of queries.
+     *
      * @var array
      */
     protected $with = [];
 
     /**
      * Array of one or more where clause parameters.
+     *
+     * This protected property holds an array of where clause conditions
+     * to filter the query results based on specific criteria.
      *
      * @var array
      */
@@ -52,12 +71,18 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Array of one or more where in clause parameters.
      *
+     * This protected property holds an array of where-in clause conditions
+     * to filter the query results based on specific sets of values.
+     *
      * @var array
      */
     protected $whereIns = [];
 
     /**
      * Array of one or more ORDER BY column/value pairs.
+     *
+     * This protected property holds an array of order by conditions
+     * to sort the query results by specific columns and directions.
      *
      * @var array
      */
@@ -66,12 +91,18 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Array of scope methods to call on the model.
      *
+     * This protected property holds an array of scope methods
+     * that will be applied to the model query for further filtering or modifications.
+     *
      * @var array
      */
     protected $scopes = [];
 
     /**
      * Find an item by its id.
+     *
+     * This method retrieves a model record by its primary key.
+     * If found, it returns the model instance; otherwise, it returns null.
      *
      * @param mixed $id The id of the item to find.
      * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
@@ -84,6 +115,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its id or fail with an exception if not found.
      *
+     * This method retrieves a model record by its primary key.
+     * If found, it returns the model instance; otherwise, it throws a ModelNotFoundException.
+     *
      * @param mixed $id The id of the item to find.
      * @return \Illuminate\Database\Eloquent\Model The found item.
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
@@ -95,6 +129,9 @@ abstract class {{ class }} implements {{ interface }}
 
     /**
      * Get all model records from the database.
+     *
+     * This method retrieves all records for the model from the database.
+     * It returns a collection containing all the model instances found.
      *
      * @return \Illuminate\Database\Eloquent\Collection All model records.
      */
@@ -112,6 +149,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Count the number of specified model records in the database.
      *
+     * This method counts the number of records that match the current query conditions.
+     * It returns the total count of records.
+     *
      * @return int The count of model records.
      */
     public function count()
@@ -121,6 +161,9 @@ abstract class {{ class }} implements {{ interface }}
 
     /**
      * Create an item.
+     *
+     * This method creates a new model record in the database using the provided data array.
+     * It returns the newly created model instance.
      *
      * @param array $data The data to create the item.
      * @return \Illuminate\Database\Eloquent\Model|null The created item.
@@ -133,6 +176,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create multiple items.
      *
+     * This method inserts multiple new model records into the database using the provided data array.
+     * It returns a collection of the newly created model instances.
+     *
      * @param array $data An array of data to create multiple items.
      * @return \Illuminate\Database\Eloquent\Collection Created items.
      */
@@ -144,9 +190,15 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete all items or the specified model record from the database by ID.
      *
+     * This method deletes a model record by its primary key if an ID is provided.
+     * If no ID is provided, it deletes all records for the model. It returns
+     * true if the deletion is successful, null if it fails or if no record
+     * is found for the given ID.
+     *
      * @param mixed|null $id The ID of the item to delete, or null to delete all items.
      * @return bool|null True if deletion is successful, null if deletion fails, or if no item is found for the given ID.
-     * @throws \Exception
+     *
+     * @throws \Exception If an error occurs during deletion.
      */
     public function delete($id = null)
     {
@@ -166,10 +218,13 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete the specified model record from the database.
      *
-     * @param $id
-     * @return bool|null
+     * This method deletes a model record identified by its primary key.
+     * It returns true if the deletion is successful, or null if it fails.
      *
-     * @throws \Exception
+     * @param mixed $id The ID of the item to delete.
+     * @return bool|null True if deletion is successful, null if deletion fails.
+     *
+     * @throws \Exception If an error occurs during deletion.
      */
     public function deleteById($id)
     {
@@ -180,6 +235,9 @@ abstract class {{ class }} implements {{ interface }}
 
     /**
      * Delete multiple items by their IDs.
+     *
+     * This method deletes multiple model records identified by their primary keys.
+     * It returns the number of records that were successfully deleted.
      *
      * @param array $ids An array of IDs of items to delete.
      * @return int The number of deleted items.
@@ -192,7 +250,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the first specified model record from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Model
+     * This method retrieves the first model record matching the current query conditions.
+     * If no conditions are set, it retrieves the first record in the table.
+     * 
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
      */
     public function first()
     {
@@ -208,7 +269,12 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the first specified model record from the database or throw an exception if not found.
      *
-     * @return \Illuminate\Database\Eloquent\Model
+     * This method retrieves the first model record matching the current query conditions.
+     * If no conditions are set, it retrieves the first record in the table.
+     * If no record is found, it throws a ModelNotFoundException.
+     * 
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function firstOrFail()
     {
@@ -224,7 +290,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get all specified model records from the database.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * This method retrieves all records for the model matching the current query conditions.
+     * It returns a collection containing the model instances found.
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection All specified model records.
      */
     public function get()
     {
@@ -238,10 +307,15 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Get the specified model record from the database.
+     * Get the
+
+ specified model record from the database.
      *
-     * @param $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * This method retrieves a model record by its primary key.
+     * If found, it returns the model instance; otherwise, it returns null.
+     * 
+     * @param mixed $id The ID of the item to retrieve.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
      */
     public function getById($id)
     {
@@ -255,8 +329,12 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by id or fail.
      *
-     * @param mixed $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * This method retrieves a model record by its primary key.
+     * If found, it returns the model instance; otherwise, it throws a ModelNotFoundException.
+     * 
+     * @param mixed $id The ID of the item to retrieve.
+     * @return \Illuminate\Database\Eloquent\Model The found item.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function getByIdOrFail($id)
     {
@@ -270,6 +348,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get an item by column value.
      *
+     * This method retrieves a model record by a specific column value.
+     * If found, it returns the model instance; otherwise, it returns null.
+     * 
      * @param mixed $item The value of the column to search for.
      * @param string $column The column to search in.
      * @param array $columns The columns to retrieve.
@@ -287,6 +368,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set the query limit.
      *
+     * This method sets a limit on the number of records to retrieve in the query.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @param int $limit The limit of the query.
      * @return $this
      */
@@ -300,6 +384,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set an ORDER BY clause.
      *
+     * This method sets an order by condition for the query results.
+     * It accepts a column to order by and the direction ('asc' or 'desc').
+     * It returns the repository instance to allow method chaining.
+     * 
      * @param string $column The column to order by.
      * @param string $direction The direction of ordering ('asc' or 'desc').
      * @return $this
@@ -314,6 +402,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Update an item by its ID.
      *
+     * This method updates a model record identified by its primary key with the provided data.
+     * It returns the updated model instance.
+     * 
      * @param mixed $id The ID of the item to update.
      * @param array $data The data to update.
      * @return \Illuminate\Database\Eloquent\Model The updated item.
@@ -332,6 +423,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Paginate the specified model records.
      *
+     * This method retrieves a paginated list of records for the model matching the current query conditions.
+     * It returns a LengthAwarePaginator instance containing the paginated results.
+     * 
      * @param int $limit The number of records per page.
      * @param array $columns The columns to retrieve.
      * @param string $pageName The name of the page query parameter.
@@ -352,6 +446,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Add a simple where clause to the query.
      *
+     * This method adds a where condition to the query based on a column, value, and optional operator.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @param string $column The column to filter by.
      * @param mixed $value The value to compare against.
      * @param string $operator The comparison operator.
@@ -367,6 +464,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Add a simple where in clause to the query.
      *
+     * This method adds a where-in condition to the query based on a column and values.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @param string $column The column to filter by.
      * @param mixed $values The values to compare against.
      * @return $this
@@ -383,7 +483,11 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set Eloquent relationships to eager load.
      *
-     * @param $relations The relationships to eager load.
+     * This method sets the relationships to be eager loaded with the query.
+     * It accepts a string or an array of relationships.
+     * It returns the repository instance to allow method chaining.
+     * 
+     * @param mixed $relations The relationships to eager load.
      * @return $this
      */
     public function with($relations)
@@ -400,6 +504,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create a new instance of the model's query builder.
      *
+     * This method initializes a new query builder instance for the model.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @return $this
      */
     protected function newQuery()
@@ -412,6 +519,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Add relationships to the query builder to eager load.
      *
+     * This method adds the specified relationships to the query builder
+     * to be eager loaded with the query results.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @return $this
      */
     protected function eagerLoad()
@@ -426,6 +537,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set clauses on the query builder.
      *
+     * This method applies the stored where, where-in, and order by conditions to the query builder.
+     * It also sets the query limit if specified. It returns the repository instance to allow method chaining.
+     * 
      * @return $this
      */
     protected function setClauses()
@@ -442,7 +556,7 @@ abstract class {{ class }} implements {{ interface }}
             $this->query->orderBy($orders['column'], $orders['direction']);
         }
 
-        if (isset($this->take) and ! is_null($this->take)) {
+        if (isset($this->take) && !is_null($this->take)) {
             $this->query->take($this->take);
         }
 
@@ -452,6 +566,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set query scopes.
      *
+     * This method applies the stored query scopes to the query builder.
+     * It returns the repository instance to allow method chaining.
+     * 
      * @return $this
      */
     protected function setScopes()
@@ -466,6 +583,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Reset the query clause parameter arrays.
      *
+     * This method resets the stored query conditions (where, where-in, scopes, limit)
+     * to their default states. It returns the repository instance to allow method chaining.
+     * 
      * @return $this
      */
     protected function unsetClauses()
