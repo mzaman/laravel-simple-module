@@ -33,6 +33,7 @@ interface {{ interface }}
      *
      * @param mixed $id The ID of the item to find.
      * @return \Illuminate\Database\Eloquent\Model The found item.
+     *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function findOrFail($id);
@@ -90,6 +91,7 @@ interface {{ interface }}
      *
      * @param mixed|null $id The ID of the item to delete, or null to delete all items.
      * @return bool|null True if deletion is successful, null if deletion fails, or if no item is found for the given ID.
+     *
      * @throws \Exception If an error occurs during deletion.
      */
     public function delete($id = null);
@@ -133,6 +135,7 @@ interface {{ interface }}
      * If no record is found, a ModelNotFoundException is thrown.
      *
      * @return \Illuminate\Database\Eloquent\Model The first model record.
+     *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the record is not found.
      */
     public function firstOrFail();
@@ -169,6 +172,7 @@ interface {{ interface }}
      *
      * @param mixed $id The ID of the item to get.
      * @return \Illuminate\Database\Eloquent\Model The found item.
+     *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function getByIdOrFail($id);
@@ -241,9 +245,9 @@ interface {{ interface }}
     /**
      * Add a simple where clause to the query.
      *
-     * This method adds a where clause to the query, filtering the results by
-     * comparing a specified column against a specified value using a specified
-     * comparison operator. It returns the current instance to allow for method chaining.
+     * This method adds a where clause to the query, filtering the results based
+     * on a specified column value, comparison operator, and value. It returns
+     * the current instance to allow for method chaining.
      *
      * @param string $column The column to filter by.
      * @param mixed $value The value to compare against.
