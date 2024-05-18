@@ -9,12 +9,19 @@ use \Exception;
 /**
  * Abstract class {{ class }}.
  *
+ * This abstract class implements the {{ interface }} interface and serves as a base
+ * class for other repository classes. It provides common database operations for
+ * Eloquent models, including finding, creating, updating, and deleting records.
+ *
  * @implements {{ interface }}
  */
 abstract class {{ class }} implements {{ interface }}
 {
     /**
      * The repository instance.
+     *
+     * This protected property holds an instance of the repository class which 
+     * interacts with the database. It is used to perform various CRUD operations.
      *
      * @var $repository
      */
@@ -23,8 +30,9 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its ID.
      *
-     * This method attempts to find a model instance by its primary key.
-     * If the model is found, it returns the model instance; otherwise, it returns null.
+     * This method attempts to retrieve a model record by its primary key. 
+     * If a record with the specified ID is found, it is returned as a Model instance.
+     * Otherwise, it returns null.
      *
      * @param mixed $id The ID of the item to find.
      * @return Model|null The found item, or null if not found.
@@ -37,14 +45,14 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its ID or fail.
      *
-     * This method attempts to find a model instance by its primary key.
-     * If the model is found, it returns the model instance.
-     * If the model is not found, it throws a ModelNotFoundException.
+     * This method attempts to retrieve a model record by its primary key.
+     * If a record with the specified ID is found, it is returned as a Model instance.
+     * If no record is found, a ModelNotFoundException is thrown.
      *
      * @param mixed $id The ID of the item to find.
      * @return Model The found item.
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the model is not found.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
     public function findOrFail($id): Model
     {
@@ -54,9 +62,10 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Return all items.
      *
-     * This method retrieves all model instances from the database.
+     * This method retrieves all records for the model from the database.
+     * It returns a Collection containing all the records found.
      *
-     * @return Collection A collection of all items.
+     * @return Collection All items.
      */
     public function all(): Collection
     {
@@ -66,9 +75,11 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create an item.
      *
-     * This method creates a new model instance with the given data and saves it to the database.
+     * This method creates a new record in the database using the provided
+     * data array. The data can be an associative array or other data types
+     * supported by the repository. The method does not return anything.
      *
-     * @param array|mixed $data The data to create the item with.
+     * @param array|mixed $data The data to create the item.
      * @return void
      */
     public function create($data): void
@@ -79,7 +90,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Update a model.
      *
-     * This method updates an existing model instance with the given data.
+     * This method updates a model record identified by its primary key with the
+     * provided data array. It returns the updated model instance.
      *
      * @param int|mixed $id The ID of the item to update.
      * @param array $data The data to update the item with.
@@ -91,14 +103,17 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Delete an item by its ID or delete all items.
+     * Delete all items or the specified model record from the database by ID.
      *
-     * This method deletes a specific model instance by its primary key.
-     * If no ID is provided, it deletes all model instances.
+     * This method deletes a model record by its primary key if an ID is provided.
+     * If no ID is provided, it deletes all records for the model. It returns
+     * true if the deletion is successful, null if it fails or if no record
+     * is found for the given ID.
      *
-     * @param  mixed|null  $id The ID of the item to delete, or null to delete all items.
-     * @return bool|null True if the delete is successful, otherwise null.
-     * @throws \Exception If an error occurs during the delete operation.
+     * @param mixed|null $id The ID of the item to delete, or null to delete all items.
+     * @return bool|null True if the deletion is successful, otherwise null.
+     *
+     * @throws \Exception If an error occurs during deletion.
      */
     public function delete($id = null)
     {
@@ -108,7 +123,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete multiple models by their IDs.
      *
-     * This method deletes multiple model instances by their primary keys.
+     * This method deletes multiple model records identified by their primary keys.
+     * It returns the number of records that were successfully deleted.
      *
      * @param array $ids The IDs of the items to delete.
      * @return int The number of models deleted.
@@ -121,13 +137,13 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Destroy multiple models by their IDs.
      *
-     * This method deletes multiple model instances by their primary keys.
-     * It is similar to deleteMultiple but uses a different method name to emphasize the destruction process.
+     * This method permanently deletes multiple model records identified by their primary keys
+     * from the database. It does not return anything.
      *
      * @param array $ids The IDs of the items to destroy.
      * @return void
      */
-    public function destroy(array $ids): void
+    public function destroy(array $ids)
     {
         $this->repository->destroy($ids);
     }
