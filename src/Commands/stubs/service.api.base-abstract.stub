@@ -9,6 +9,9 @@ use \Exception;
 /**
  * Abstract class {{ class }}.
  *
+ * This abstract class provides a base implementation for the {{ interface }} interface,
+ * handling common CRUD operations and response formatting for API interactions.
+ *
  * @implements {{ interface }}
  */
 abstract class {{ class }} implements {{ interface }}
@@ -19,17 +22,30 @@ abstract class {{ class }} implements {{ interface }}
     protected $update_message = "";
     protected $delete_message = "";
 
+    // Property to reference the repository
+    protected $repository;
+
+    /**
+     * Constructor to initialize the repository.
+     *
+     * @param mixed $repository The repository instance to be used for data operations.
+     */
+    public function __construct($repository)
+    {
+        $this->repository = $repository;
+    }
+
     /* Response formatting related code: START */
-    private $result = null;
-    private $status = false;
-    private $message = null;
-    private $code = null;
+    private $result = null;  // Stores the result of the operation
+    private $status = false; // Indicates the success or failure of the operation
+    private $message = null; // Message to be included in the response
+    private $code = null;    // HTTP status code for the response
 
     /**
      * Set the result output.
      *
      * @param mixed $result The result to set.
-     * @return $this
+     * @return $this Returns the current instance for method chaining.
      */
     public function setResult($result)
     {
@@ -40,7 +56,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the result.
      *
-     * @return mixed|null The result.
+     * @return mixed|null The result of the operation, or null if not set.
      */
     public function getResult()
     {
@@ -50,8 +66,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set the status.
      *
-     * @param bool $status The status to set.
-     * @return $this
+     * @param bool $status The status to set (true for success, false for failure).
+     * @return $this Returns the current instance for method chaining.
      */
     public function setStatus($status)
     {
@@ -62,7 +78,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the status.
      *
-     * @return bool The status.
+     * @return bool The status of the operation (true for success, false for failure).
      */
     public function getStatus()
     {
@@ -73,7 +89,7 @@ abstract class {{ class }} implements {{ interface }}
      * Set the message.
      *
      * @param mixed $message The message to set.
-     * @return $this
+     * @return $this Returns the current instance for method chaining.
      */
     public function setMessage($message)
     {
@@ -84,7 +100,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the message.
      *
-     * @return mixed|null The message.
+     * @return mixed|null The message of the operation, or null if not set.
      */
     public function getMessage()
     {
@@ -94,8 +110,8 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Set the code.
      *
-     * @param mixed $code The code to set.
-     * @return $this
+     * @param mixed $code The HTTP status code to set.
+     * @return $this Returns the current instance for method chaining.
      */
     public function setCode($code)
     {
@@ -106,7 +122,7 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Get the code.
      *
-     * @return mixed|null The code.
+     * @return mixed|null The HTTP status code of the operation, or null if not set.
      */
     public function getCode()
     {
@@ -114,13 +130,20 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Exception response handler.
+     * Handle exceptions and format the response accordingly.
+     *
+     * This method handles different types of exceptions and formats the response
+     * based on the exception type. For QueryException, it checks for specific error codes.
+     * For ModelNotFoundException, it handles both JSON and non-JSON requests.
+     * In debug mode, it provides detailed exception information; otherwise,
+     * it provides a generic error message.
      *
      * @param Exception $exception The exception to handle.
-     * @return $this
+     * @return $this Returns the current instance with the error response set.
      */
     public function exceptionResponse(Exception $exception)
     {
+        // Handle database related exceptions
         if ($exception instanceof QueryException) {
             if ($exception->errorInfo[1] == 1451) {
                 return $this->setStatus(false)
@@ -128,6 +151,7 @@ abstract class {{ class }} implements {{ interface }}
                     ->setCode(400);
             }
         }
+        // Handle model not found exceptions
         if ($exception instanceof ModelNotFoundException) {
             if (!request()->expectsJson()) {
                 return abort(404);
@@ -136,6 +160,7 @@ abstract class {{ class }} implements {{ interface }}
                 ->setMessage('The requested data does not exist.')
                 ->setCode(404);
         }
+        // Handle generic exceptions with debug details if in debug mode
         if (config('app.debug')) {
             $message = (object) [
                 'exception' => 'Error',
@@ -148,14 +173,18 @@ abstract class {{ class }} implements {{ interface }}
                 ->setMessage($message)
                 ->setCode(500);
         }
-
+        // Handle generic exceptions with a generic message in production mode
         return $this->setStatus(false)
             ->setMessage('An unexpected error occurred. Please try again later.')
             ->setCode(500);
     }
 
     /**
-     * Convert the response to JSON.
+     * Convert the response to JSON format.
+     *
+     * This method formats the response data into JSON, including the status, HTTP code,
+     * message, and result data. The HTTP code defaults to 200 for success or 400 for failure
+     * if not explicitly set.
      *
      * @return \Illuminate\Http\JsonResponse The JSON response.
      */
@@ -170,23 +199,26 @@ abstract class {{ class }} implements {{ interface }}
             'data' => $this->getResult(),
         ], $http_code);
     }
-
     /* Response formatting related code: END */
 
     /**
      * Find an item by its ID.
      *
+     * This method attempts to find a single item by its ID using the repository.
+     * If found, it sets the result, status, and code. If an exception occurs,
+     * it handles the exception and formats the response.
+     *
      * @param mixed $id The ID of the item to find.
-     * @return Model|null The found item.
+     * @return $this The current instance with the result set or an error response.
      */
     public function find($id)
     {
         try {
-            $result = $this->repository->find($id);
+            $result = $this->repository->getById($id);
             return $this->setResult($result)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
@@ -194,17 +226,22 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Find an item by its ID or fail.
      *
+     * This method attempts to find a single item by its ID using the repository.
+     * If the item is not found, it throws a ModelNotFoundException.
+     * If found, it sets the result, status, and code. If an exception occurs,
+     * it handles the exception and formats the response.
+     *
      * @param mixed $id The ID of the item to find.
-     * @return Model|null The found item.
+     * @return $this The current instance with the result set or an error response.
      */
     public function findOrFail($id)
     {
         try {
-            $result = $this->repository->findOrFail($id);
+            $result = $this->repository->getByIdOrFail($id);
             return $this->setResult($result)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
@@ -212,16 +249,19 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Return all items.
      *
-     * @return Collection|null All items.
+     * This method retrieves all items from the repository and sets the result.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
+     * @return $this The current instance with the result set or an error response.
      */
     public function all()
     {
         try {
-            $result = $this->repository->all();;
+            $result = $this->repository->all();
             return $this->setResult($result)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
@@ -229,17 +269,21 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Create an item.
      *
+     * This method creates a new item using the provided data.
+     * Upon successful creation, it sets a success message, status, and code.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
      * @param array|mixed $data The data to create the item.
-     * @return Model|null The created item.
+     * @return $this The current instance with the creation status or an error response.
      */
     public function create($data)
     {
         try {
             $this->repository->create($data);
-            return $this->setMessage($this->title." ".$this->create_message)
+            return $this->setMessage($this->title . " " . $this->create_message)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
@@ -247,37 +291,45 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Update a model.
      *
+     * This method updates an existing item identified by its ID with the provided data.
+     * Upon successful update, it sets a success message, status, and code.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
      * @param int|mixed $id The ID of the item to update.
-     * @param array|mixed $data The data to update.
-     * @return bool|mixed True if the update is successful, otherwise the response with error details.
+     * @param array|mixed $data The data to update the item with.
+     * @return $this The current instance with the update status or an error response.
      */
     public function update($id, array $data)
     {
         try {
             $this->repository->update($id, $data);
-            return $this->setMessage($this->title." ".$this->update_message)
+            return $this->setMessage($this->title . " " . $this->update_message)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
 
     /**
-     * Delete all items or the specified model record from the database by ID.
+     * Delete an item by its ID.
      *
-     * @param  mixed|null  $id The ID of the item to delete.
-     * @return bool|null True if the delete is successful, otherwise the response with error details.
-     * @throws \Exception
+     * This method deletes an item identified by its ID from the repository.
+     * Upon successful deletion, it sets a success message, status, and code.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
+     * @param mixed|null $id The ID of the item to delete.
+     * @return $this The current instance with the deletion status or an error response.
+     * @throws Exception
      */
     public function delete($id = null)
     {
         try {
             $this->repository->delete($id);
-            return $this->setMessage($this->title." ".$this->delete_message)
+            return $this->setMessage($this->title . " " . $this->delete_message)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
@@ -285,17 +337,21 @@ abstract class {{ class }} implements {{ interface }}
     /**
      * Delete multiple items by their IDs.
      *
+     * This method deletes multiple items identified by their IDs from the repository.
+     * Upon successful deletion, it sets a success message, status, and code.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
      * @param array $ids The IDs of the items to delete.
-     * @return mixed True if the delete is successful, otherwise the response with error details.
+     * @return $this The current instance with the deletion status or an error response.
      */
     public function destroy(array $ids)
     {
         try {
             $this->repository->destroy($ids);
-            return $this->setMessage($this->title." ".$this->delete_message)
+            return $this->setMessage($this->title . " " . $this->delete_message)
                 ->setCode(200)
                 ->setStatus(true);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->exceptionResponse($exception);
         }
     }
