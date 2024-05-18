@@ -13,17 +13,25 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 interface {{ interface }}
 {
     /**
-     * Find an item by its id.
+     * Find an item by its ID.
      *
-     * @param mixed $id The id of the item to find.
+     * This method attempts to retrieve a model record by its primary key.
+     * If a record with the specified ID is found, it is returned as a Model
+     * instance. Otherwise, it returns null.
+     *
+     * @param mixed $id The ID of the item to find.
      * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
      */
     public function find($id);
 
     /**
-     * Find an item by its id or fail with an exception if not found.
+     * Find an item by its ID or fail with an exception if not found.
      *
-     * @param mixed $id The id of the item to find.
+     * This method attempts to retrieve a model record by its primary key.
+     * If a record with the specified ID is found, it is returned as a Model
+     * instance. If no record is found, a ModelNotFoundException is thrown.
+     *
+     * @param mixed $id The ID of the item to find.
      * @return \Illuminate\Database\Eloquent\Model The found item.
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
      */
@@ -32,12 +40,18 @@ interface {{ interface }}
     /**
      * Get all model records from the database.
      *
+     * This method retrieves all records for the model from the database.
+     * It returns a Collection containing all the records found.
+     *
      * @return \Illuminate\Database\Eloquent\Collection All model records.
      */
     public function all();
 
     /**
      * Count the number of specified model records in the database.
+     *
+     * This method counts the number of records for the model in the database
+     * and returns the count as an integer.
      *
      * @return int The count of model records.
      */
@@ -46,7 +60,11 @@ interface {{ interface }}
     /**
      * Create a new item.
      *
-     * @param array $data The data to create the item.
+     * This method creates a new record in the database using the provided
+     * data array. It returns the created model instance, or null if the
+     * creation fails.
+     *
+     * @param array $data The data to create the item with.
      * @return \Illuminate\Database\Eloquent\Model|null The created item.
      */
     public function create(array $data);
@@ -54,22 +72,33 @@ interface {{ interface }}
     /**
      * Create multiple items.
      *
+     * This method creates multiple records in the database using the provided
+     * data array. It returns a Collection containing the created model instances.
+     *
      * @param array $data An array of data to create multiple items.
      * @return \Illuminate\Database\Eloquent\Collection Created items.
      */
     public function createMultiple(array $data);
-    
+
     /**
-     * Delete all items or the specified model record from the database by ID.
+     * Delete an item or all items from the database.
      *
-     * @param  mixed|null $id The ID of the item to delete, or null to delete all items.
+     * This method deletes a model record by its primary key if an ID is provided.
+     * If no ID is provided, it deletes all records for the model. It returns
+     * true if the deletion is successful, null if it fails or if no record
+     * is found for the given ID.
+     *
+     * @param mixed|null $id The ID of the item to delete, or null to delete all items.
      * @return bool|null True if deletion is successful, null if deletion fails, or if no item is found for the given ID.
-     * @throws \Exception
+     * @throws \Exception If an error occurs during deletion.
      */
     public function delete($id = null);
 
     /**
      * Delete the specified model record from the database.
+     *
+     * This method deletes a specific model record identified by its primary key.
+     * It returns true if the deletion is successful, or null if the deletion fails.
      *
      * @param mixed $id The ID of the item to delete.
      * @return bool|null True if deletion is successful, null if deletion fails.
@@ -79,6 +108,9 @@ interface {{ interface }}
     /**
      * Delete multiple items by their IDs.
      *
+     * This method deletes multiple model records identified by their primary keys.
+     * It returns the number of records that were successfully deleted.
+     *
      * @param array $ids An array of IDs of items to delete.
      * @return int The number of deleted items.
      */
@@ -87,12 +119,18 @@ interface {{ interface }}
     /**
      * Get the first specified model record from the database.
      *
+     * This method retrieves the first record for the model from the database.
+     * It returns the first model instance found.
+     *
      * @return \Illuminate\Database\Eloquent\Model The first model record.
      */
     public function first();
 
     /**
      * Get the first specified model record from the database or fail with an exception if not found.
+     *
+     * This method retrieves the first record for the model from the database.
+     * If no record is found, a ModelNotFoundException is thrown.
      *
      * @return \Illuminate\Database\Eloquent\Model The first model record.
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the record is not found.
@@ -102,12 +140,20 @@ interface {{ interface }}
     /**
      * Get all specified model records from the database.
      *
+     * This method retrieves all records that match the current query conditions
+     * for the model from the database. It returns a Collection containing the
+     * model instances found.
+     *
      * @return \Illuminate\Database\Eloquent\Collection All specified model records.
      */
     public function get();
 
     /**
      * Get the specified model record from the database by its ID.
+     *
+     * This method retrieves a model record by its primary key. If a record
+     * with the specified ID is found, it is returned as a Model instance.
+     * Otherwise, it returns null.
      *
      * @param mixed $id The ID of the item to get.
      * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
@@ -117,6 +163,10 @@ interface {{ interface }}
     /**
      * Get the specified model record from the database by its ID or fail with an exception if not found.
      *
+     * This method retrieves a model record by its primary key. If a record
+     * with the specified ID is found, it is returned as a Model instance.
+     * If no record is found, a ModelNotFoundException is thrown.
+     *
      * @param mixed $id The ID of the item to get.
      * @return \Illuminate\Database\Eloquent\Model The found item.
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
@@ -125,6 +175,10 @@ interface {{ interface }}
 
     /**
      * Get an item by column value.
+     *
+     * This method retrieves a model record by searching for a specific value
+     * in a specified column. If a record with the specified value is found,
+     * it is returned as a Model instance. Otherwise, it returns null.
      *
      * @param mixed $item The value of the column to search for.
      * @param string $column The column to search in.
@@ -136,6 +190,9 @@ interface {{ interface }}
     /**
      * Set the query limit.
      *
+     * This method sets a limit on the number of records to retrieve in the query.
+     * It returns the current instance to allow for method chaining.
+     *
      * @param int $limit The limit of the query.
      * @return $this
      */
@@ -143,6 +200,10 @@ interface {{ interface }}
 
     /**
      * Set an ORDER BY clause.
+     *
+     * This method sets an ORDER BY clause for the query, specifying the column
+     * to order by and the direction of the ordering ('asc' for ascending, 'desc'
+     * for descending). It returns the current instance to allow for method chaining.
      *
      * @param string $column The column to order by.
      * @param string $direction The direction of ordering ('asc' or 'desc').
@@ -153,14 +214,21 @@ interface {{ interface }}
     /**
      * Update an item by its ID.
      *
+     * This method updates a model record identified by its primary key with the
+     * provided data array. It returns the updated model instance.
+     *
      * @param mixed $id The ID of the item to update.
-     * @param array $data The data to update.
+     * @param array $data The data to update the item with.
      * @return \Illuminate\Database\Eloquent\Model The updated item.
      */
     public function updateById($id, array $data);
 
     /**
      * Paginate the specified model records.
+     *
+     * This method paginates the results of the query, retrieving a specified
+     * number of records per page. It returns a LengthAwarePaginator instance
+     * containing the paginated results.
      *
      * @param int $limit The number of records per page.
      * @param array $columns The columns to retrieve.
@@ -173,6 +241,10 @@ interface {{ interface }}
     /**
      * Add a simple where clause to the query.
      *
+     * This method adds a where clause to the query, filtering the results by
+     * comparing a specified column against a specified value using a specified
+     * comparison operator. It returns the current instance to allow for method chaining.
+     *
      * @param string $column The column to filter by.
      * @param mixed $value The value to compare against.
      * @param string $operator The comparison operator.
@@ -181,7 +253,11 @@ interface {{ interface }}
     public function where($column, $value, $operator = '=');
 
     /**
-     * Add a simple where in clause to the query.
+     * Add a where in clause to the query.
+     *
+     * This method adds a where in clause to the query, filtering the results by
+     * checking if the specified column value is within a specified set of values.
+     * It returns the current instance to allow for method chaining.
      *
      * @param string $column The column to filter by.
      * @param mixed $values The values to compare against.
@@ -191,6 +267,10 @@ interface {{ interface }}
 
     /**
      * Set Eloquent relationships to eager load.
+     *
+     * This method sets relationships to be eager loaded, ensuring that related
+     * models are loaded alongside the main model to optimize performance and
+     * reduce the number of queries. It returns the current instance to allow for method chaining.
      *
      * @param string|array $relations The relationships to eager load.
      * @return $this
