@@ -15,6 +15,190 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 interface {{ interface }} extends {{ parent }}
 {
     
+    /**
+     * Count the number of specified model records in the database.
+     *
+     * This method counts the number of records for the model in the database
+     * and returns the count as an integer.
+     *
+     * @return int The count of model records.
+     */
+    public function count();
+
+    /**
+     * Delete the specified model record from the database.
+     *
+     * This method deletes a specific model record identified by its primary key.
+     * It returns true if the deletion is successful, or null if the deletion fails.
+     *
+     * @param mixed $id The ID of the item to delete.
+     * @return bool|null True if deletion is successful, null if deletion fails.
+     */
+    public function deleteById($id);
+
+    /**
+     * Get the first specified model record from the database.
+     *
+     * This method retrieves the first record for the model from the database.
+     * It returns the first model instance found.
+     *
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
+     */
+    public function first();
+
+    /**
+     * Get the first specified model record from the database or fail with an exception if not found.
+     *
+     * This method retrieves the first record for the model from the database.
+     * If no record is found, a ModelNotFoundException is thrown.
+     *
+     * @return \Illuminate\Database\Eloquent\Model The first model record.
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the record is not found.
+     */
+    public function firstOrFail();
+
+    /**
+     * Get all specified model records from the database.
+     *
+     * This method retrieves all records that match the current query conditions
+     * for the model from the database. It returns a Collection containing the
+     * model instances found.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection All specified model records.
+     */
+    public function get();
+
+    /**
+     * Get the specified model record from the database by its ID.
+     *
+     * This method retrieves a model record by its primary key. If a record
+     * with the specified ID is found, it is returned as a Model instance.
+     * Otherwise, it returns null.
+     *
+     * @param mixed $id The ID of the item to get.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
+     */
+    public function getById($id);
+
+    /**
+     * Get the specified model record from the database by its ID or fail with an exception if not found.
+     *
+     * This method retrieves a model record by its primary key. If a record
+     * with the specified ID is found, it is returned as a Model instance.
+     * If no record is found, a ModelNotFoundException is thrown.
+     *
+     * @param mixed $id The ID of the item to get.
+     * @return \Illuminate\Database\Eloquent\Model The found item.
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the item is not found.
+     */
+    public function getByIdOrFail($id);
+
+    /**
+     * Get an item by column value.
+     *
+     * This method retrieves a model record by searching for a specific value
+     * in a specified column. If a record with the specified value is found,
+     * it is returned as a Model instance. Otherwise, it returns null.
+     *
+     * @param mixed $item The value of the column to search for.
+     * @param string $column The column to search in.
+     * @param array $columns The columns to retrieve.
+     * @return \Illuminate\Database\Eloquent\Model|null The found item, or null if not found.
+     */
+    public function getByColumn($item, $column, array $columns = ['*']);
+
+    /**
+     * Set the query limit.
+     *
+     * This method sets a limit on the number of records to retrieve in the query.
+     * It returns the current instance to allow for method chaining.
+     *
+     * @param int $limit The limit of the query.
+     * @return $this
+     */
+    public function limit($limit);
+
+    /**
+     * Set an ORDER BY clause.
+     *
+     * This method sets an ORDER BY clause for the query, specifying the column
+     * to order by and the direction of the ordering ('asc' for ascending, 'desc'
+     * for descending). It returns the current instance to allow for method chaining.
+     *
+     * @param string $column The column to order by.
+     * @param string $direction The direction of ordering ('asc' or 'desc').
+     * @return $this
+     */
+    public function orderBy($column, $direction = 'asc');
+
+    /**
+     * Update an item by its ID.
+     *
+     * This method updates a model record identified by its primary key with the
+     * provided data array. It returns the updated model instance.
+     *
+     * @param mixed $id The ID of the item to update.
+     * @param array $data The data to update the item with.
+     * @return \Illuminate\Database\Eloquent\Model The updated item.
+     */
+    public function updateById($id, array $data);
+
+    /**
+     * Paginate the specified model records.
+     *
+     * This method paginates the results of the query, retrieving a specified
+     * number of records per page. It returns a LengthAwarePaginator instance
+     * containing the paginated results.
+     *
+     * @param int $limit The number of records per page.
+     * @param array $columns The columns to retrieve.
+     * @param string $pageName The name of the page query parameter.
+     * @param int|null $page The page number.
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Paginated results.
+     */
+    public function paginate($limit = 25, array $columns = ['*'], $pageName = 'page', $page = null);
+
+    /**
+     * Add a simple where clause to the query.
+     *
+     * This method adds a where clause to the query, filtering the results based
+     * on a specified column value, comparison operator, and value. It returns
+     * the current instance to allow for method chaining.
+     *
+     * @param string $column The column to filter by.
+     * @param mixed $value The value to compare against.
+     * @param string $operator The comparison operator.
+     * @return $this
+     */
+    public function where($column, $value, $operator = '=');
+
+    /**
+     * Add a where in clause to the query.
+     *
+     * This method adds a where in clause to the query, filtering the results by
+     * checking if the specified column value is within a specified set of values.
+     * It returns the current instance to allow for method chaining.
+     *
+     * @param string $column The column to filter by.
+     * @param mixed $values The values to compare against.
+     * @return $this
+     */
+    public function whereIn($column, $values);
+
+    /**
+     * Set Eloquent relationships to eager load.
+     *
+     * This method sets relationships to be eager loaded, ensuring that related
+     * models are loaded alongside the main model to optimize performance and
+     * reduce the number of queries. It returns the current instance to allow for method chaining.
+     *
+     * @param string|array $relations The relationships to eager load.
+     * @return $this
+     */
+    public function with($relations);
+    
     // Additional methods specific to {{ interface }}
     // New methods for the repository operations
 }

@@ -164,6 +164,7 @@ trait SharedMethods
         $interfaces = [
             'repository' => __DIR__ . '/stubs/repository.base-interface.stub',
             'service' => __DIR__ . '/stubs/service.base-interface.stub',
+            'service.api' => __DIR__ . '/stubs/service.api.base-interface.stub',
         ];
 
         $abstracts = [

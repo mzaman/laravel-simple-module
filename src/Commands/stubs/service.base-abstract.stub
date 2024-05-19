@@ -88,6 +88,20 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
+     * Create multiple items.
+     *
+     * This method inserts multiple new model records into the database using the provided data array.
+     * It returns a collection of the newly created model instances.
+     *
+     * @param array $data An array of data to create multiple items.
+     * @return \Illuminate\Database\Eloquent\Collection Created items.
+     */
+    public function createMultiple(array $data)
+    {
+        return $this->repository->createMultiple($data);
+    }
+
+    /**
      * Update a model.
      *
      * This method updates a model record identified by its primary key with the
@@ -145,6 +159,6 @@ abstract class {{ class }} implements {{ interface }}
      */
     public function destroy(array $ids)
     {
-        $this->repository->destroy($ids);
+        $this->repository->deleteMultiple($ids);
     }
 }

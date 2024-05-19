@@ -242,9 +242,23 @@ abstract class {{ class }} implements {{ interface }}
      * @param array $ids An array of IDs of items to delete.
      * @return int The number of deleted items.
      */
-    public function deleteMultipleById(array $ids)
+    public function deleteMultiple(array $ids)
     {
         return $this->model->destroy($ids);
+    }
+
+    /**
+     * Destroy multiple models by their IDs.
+     *
+     * This method permanently deletes multiple model records identified by their primary keys
+     * from the database. It does not return anything.
+     *
+     * @param array $ids The IDs of the items to destroy.
+     * @return void
+     */
+    public function destroy(array $ids)
+    {
+        $this->deleteMultiple($ids);
     }
 
     /**
@@ -397,6 +411,21 @@ abstract class {{ class }} implements {{ interface }}
         $this->orderBys[] = compact('column', 'direction');
 
         return $this;
+    }
+
+    /**
+     * Update an item by its ID.
+     *
+     * This method updates a model record identified by its primary key with the provided data.
+     * It returns the updated model instance.
+     * 
+     * @param mixed $id The ID of the item to update.
+     * @param array $data The data to update.
+     * @return \Illuminate\Database\Eloquent\Model The updated item.
+     */
+    public function update($id, array $data)
+    {
+        return $this->updateById($id, $data);
     }
 
     /**

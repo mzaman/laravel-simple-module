@@ -289,6 +289,27 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
+     * Create multiple items.
+     *
+     * This method inserts multiple new model records into the database using the provided data array.
+     * It returns a collection of the newly created model instances.
+     *
+     * @param array $data An array of data to create multiple items.
+     * @return $this The current instance with the creation status or an error response.
+     */
+    public function createMultiple(array $data)
+    {        
+        try {
+            $this->repository->createMultiple($data);
+            return $this->setMessage($this->title . " " . $this->create_message)
+                ->setCode(200)
+                ->setStatus(true);
+        } catch (Exception $exception) {
+            return $this->exceptionResponse($exception);
+        }
+    }
+
+    /**
      * Update a model.
      *
      * This method updates an existing item identified by its ID with the provided data.
@@ -344,10 +365,32 @@ abstract class {{ class }} implements {{ interface }}
      * @param array $ids The IDs of the items to delete.
      * @return $this The current instance with the deletion status or an error response.
      */
+    public function deleteMultiple(array $ids)
+    {
+        try {
+            $this->repository->deleteMultiple($ids);
+            return $this->setMessage($this->title . " " . $this->delete_message)
+                ->setCode(200)
+                ->setStatus(true);
+        } catch (Exception $exception) {
+            return $this->exceptionResponse($exception);
+        }
+    }
+
+    /**
+     * Delete multiple items by their IDs.
+     *
+     * This method deletes multiple items identified by their IDs from the repository.
+     * Upon successful deletion, it sets a success message, status, and code.
+     * If an exception occurs, it handles the exception and formats the response.
+     *
+     * @param array $ids The IDs of the items to delete.
+     * @return $this The current instance with the deletion status or an error response.
+     */
     public function destroy(array $ids)
     {
         try {
-            $this->repository->destroy($ids);
+            $this->repository->deleteMultiple($ids);
             return $this->setMessage($this->title . " " . $this->delete_message)
                 ->setCode(200)
                 ->setStatus(true);
