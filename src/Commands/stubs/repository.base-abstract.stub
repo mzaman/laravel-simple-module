@@ -321,9 +321,7 @@ abstract class {{ class }} implements {{ interface }}
     }
 
     /**
-     * Get the
-
- specified model record from the database.
+     * Get the specified model record from the database.
      *
      * This method retrieves a model record by its primary key.
      * If found, it returns the model instance; otherwise, it returns null.
