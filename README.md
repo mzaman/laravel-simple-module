@@ -280,15 +280,6 @@ app/ - Laravel application code
 ├── Repositories
 │   ├── BaseRepository.php
 │   ├── BaseRepositoryInterface.php
-│   ├── Interfaces
-│   │   ├── PermissionRepositoryInterface.php
-│   │   ├── PostRepositoryInterface.php
-│   │   ├── RoleRepositoryInterface.php
-│   │   └── UserRepositoryInterface.php
-│   ├── PermissionRepository.php
-│   ├── PostRepository.php
-│   ├── RoleRepository.php
-│   └── UserRepository.php
 └── Services
     ├── BaseApiService.php
     ├── BaseApiServiceInterface.php
